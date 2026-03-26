@@ -74,6 +74,7 @@ game/
 - ✅ Step 13: Asset Restore + Spacing Fix — all 36 assets restored, fonts downloaded, stat icon variants generated, spacing fixes across Game Over / Explore / Shop / Event / Loot screens
 - ✅ Step 14: Exploration Path Icons + Two-Line Descriptions — 6 new path choice icons loaded at 64×64, PATH_TEMPLATES expanded with desc2, ExploreScreen redesigned with icon + name + description per path button
 - ✅ Step 15: Side-by-Side Path Layout + Bigger Icons — icons scaled to 150×150, stacked layout → side-by-side cards (560×260), description text word-wrapped
+- ✅ Step 16: Luck Icon Fix + Card Rendering Cleanup — replaced Luck_Icon_F with correct version, regenerated variants, cleaner card rendering
 
 ## Crash Prevention Protocol
 1. ONE task per prompt

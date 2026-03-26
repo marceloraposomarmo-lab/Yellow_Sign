@@ -110,3 +110,9 @@ Last updated: 2026-03-26 23:58
 - Each card: 560×260, icon centered on top, name + wrapped description below
 - "Choose your path:" uses title_sm font for bolder header
 - Description text word-wrapped for readability
+
+### ✅ Step 16: Luck Icon Fix + Card Rendering Cleanup (Session 9 — 2026-03-27)
+- Replaced Luck_Icon_F.png with correct version from user
+- Regenerated all luck icon size variants (32/36/48/64)
+- Path cards use draw_parchment_panel directly (no draw_ornate_button with empty text)
+- Explicit gold/yellow border on hover, separate glow layer

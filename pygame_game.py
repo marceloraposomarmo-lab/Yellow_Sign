@@ -1325,9 +1325,14 @@ class ExploreScreen(Screen):
                 hovered = (i == self.hover_idx)
                 ptype = path["type"]
 
-                # Draw parchment card background
-                draw_ornate_button(surface, btn, "", self.assets.fonts["body"],
-                                   hover=hovered, color=C.PARCHMENT_EDGE)
+                # Draw parchment card background with hover effect
+                draw_parchment_panel(surface, btn.x, btn.y, btn.w, btn.h)
+                border_col = C.YELLOW if hovered else C.PARCHMENT_EDGE
+                pygame.draw.rect(surface, border_col, btn, 2, border_radius=4)
+                if hovered:
+                    glow = pygame.Surface((btn.w + 10, btn.h + 10), pygame.SRCALPHA)
+                    glow.fill((120, 80, 200, 40))
+                    surface.blit(glow, (btn.x - 5, btn.y - 5))
 
                 # Icon on top-center of the card
                 icon_key = f"path_{ptype}"
