@@ -1,7 +1,7 @@
 # Visual Overhaul Roadmap
 
-## Status: ✅ COMPLETE + Code Refactoring
-Last updated: 2026-03-28 07:17
+## Status: ✅ COMPLETE + Code Refactoring + Polish Effects
+Last updated: 2026-03-28 07:52
 
 ## Workflow
 **ONE task per prompt. Save code + roadmap + memory after each step.**
@@ -160,6 +160,12 @@ Last updated: 2026-03-28 07:17
 
 ### Pending
 - Further text spacing polish if needed (exploration, equipment, general cleanup)
+
+### ✅ Step 26: Fade-to-Screen Transitions (Session 13 — 2026-03-28)
+- Fade-to-black transition on all screen switches (0.3s fade-out, 0.3s fade-in)
+- Input blocked during fade-out to prevent accidental clicks mid-transition
+- Rapid switches force-complete the pending transition immediately
+- Transition overlay drawn on top of current frame with interpolated alpha
 
 ### ✅ Step 14: Exploration Path Icons + Two-Line Descriptions (Session 9 — 2026-03-27)
 - Added 6 new path choice icons: Enemy_Ahead_F.png, Boss_Ahead_F.png, Shop_Ahead_F.png, Item_Ahead.png, Rest_Ahead_F.jfif, Decision_Ahead.png
