@@ -94,6 +94,9 @@ class Skill:
         self.true_strike = data.get("true_strike", False)
         self.extend_debuffs = data.get("extend_debuffs", False)
         self.random_effect = data.get("random_effect", False)
+        self.tier = data.get("tier", 1)
+        self.category = data.get("category", "offensive")
+        self.stat_priority = data.get("stat_priority", [])
 
     def to_dict(self):
         return {
@@ -116,12 +119,16 @@ class Skill:
             "flat_crit_bonus": self.flat_crit_bonus, "luck_bonus": self.luck_bonus,
             "true_strike": self.true_strike, "extend_debuffs": self.extend_debuffs,
             "random_effect": self.random_effect,
+            "tier": self.tier, "category": self.category, "stat_priority": self.stat_priority,
         }
 
     @classmethod
     def from_dict(cls, d):
         s = cls(d)
         s.current_cd = d.get("current_cd", 0)
+        s.tier = d.get("tier", 1)
+        s.category = d.get("category", "offensive")
+        s.stat_priority = d.get("stat_priority", [])
         return s
 
 
@@ -284,7 +291,6 @@ class GameState:
     def check_level_up(self):
         """Check and process level ups. Returns True if leveled up."""
         leveled = False
-        old_level = self.level
         while self.xp >= self.xp_next:
             self.xp -= self.xp_next
             self.level += 1
@@ -294,13 +300,63 @@ class GameState:
             leveled = True
 
         if leveled:
+            # Determine tier based on level
+            if self.level <= 5:
+                tier = 1
+            elif self.level <= 10:
+                tier = 2
+            else:
+                tier = 3
+
+            # Filter: correct tier, not already learned
             available = [
                 s for s in self.all_skills
-                if s.unlock_lv <= self.level and
+                if s.tier == tier and
                 not any(a.name == s.name for a in self.active_skills)
             ]
-            random.shuffle(available)
-            self.pending_levelup_skills = available[:3]
+
+            if not available:
+                # Fallback: any tier not already learned
+                available = [
+                    s for s in self.all_skills
+                    if not any(a.name == s.name for a in self.active_skills)
+                ]
+
+            if available:
+                # Weighted selection based on class stat priorities
+                cls_data = CLASSES[self.class_id]
+                primary_stat = max(cls_data["base_stats"], key=cls_data["base_stats"].get)
+                second_stat = sorted(cls_data["base_stats"].items(), key=lambda x: x[1], reverse=True)[1][0]
+
+                weighted_pool = []
+                for s in available:
+                    weight = 1
+                    if hasattr(s, 'stat_priority') and s.stat_priority:
+                        if primary_stat in s.stat_priority:
+                            weight = 3
+                        elif second_stat in s.stat_priority:
+                            weight = 2
+                    weighted_pool.extend([s] * weight)
+
+                random.shuffle(weighted_pool)
+
+                chosen = []
+                for s in weighted_pool:
+                    if len(chosen) >= 2:
+                        break
+                    if not any(c.name == s.name for c in chosen):
+                        chosen.append(s)
+
+                # Ensure we have 2 if possible
+                if len(chosen) < 2 and len(available) >= 2:
+                    remaining = [s for s in available if not any(c.name == s.name for c in chosen)]
+                    if remaining:
+                        chosen.append(random.choice(remaining))
+
+                self.pending_levelup_skills = chosen[:2]
+            else:
+                self.pending_levelup_skills = []
+
         return leveled
 
     def equip_item(self, item):
@@ -685,6 +741,49 @@ def player_use_skill(state, skill_index):
             state.hp = state.max_hp
             state.madness = min(100, state.madness + 25)
             logs.append(("Carcosa's Blessing: Full heal! (+25 MAD)", "heal"))
+        elif skill.heal_calc == "int2_mend":
+            h = int(state.stats["int"] * 2)
+            state.hp = min(state.max_hp, state.hp + h)
+            logs.append((f"Abyssal Mend heals {h} HP!", "heal"))
+        elif skill.heal_calc == "devour15":
+            h = int(state.max_hp * 0.15)
+            state.hp = min(state.max_hp, state.hp + h)
+            logs.append((f"Devour heals {h} HP!", "heal"))
+        elif skill.heal_calc == "titanResil":
+            h = int(state.max_hp * 0.40)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.statuses.clear()
+            logs.append((f"Titanic Resilience heals {h} HP and cleanses all debuffs!", "heal"))
+        elif skill.heal_calc == "layOnHands":
+            h = int(state.stats["wis"] * 3)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.statuses.clear()
+            logs.append((f"Lay on Hands heals {h} HP and cleanses!", "heal"))
+        elif skill.heal_calc == "meditation":
+            h = int(state.max_hp * 0.20)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.madness = max(0, state.madness - 10)
+            logs.append((f"Blessed Meditation heals {h} HP! -10 MAD!", "heal"))
+        elif skill.heal_calc == "darkRegen":
+            h = int(state.max_hp * 0.30)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.buffs["darkRegenBuff"] = 2
+            logs.append((f"Dark Regeneration heals {h} HP! EVA+20% 2t!", "heal"))
+        elif skill.heal_calc == "hasturEmbrace":
+            state.hp = state.max_hp
+            state.madness = min(100, state.madness + 20)
+            state.buffs["immunity"] = 2
+            logs.append(("Hastur's Embrace: Full heal! Immune debuffs 2t! (+20 MAD)", "heal"))
+        elif skill.heal_calc == "secondWind":
+            h = int(state.max_hp * 0.20)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.buffs["regen"] = 2
+            logs.append((f"Second Wind heals {h} HP! Regen 3% 2t!", "heal"))
+        elif skill.heal_calc == "nimbleRecov":
+            h = int(state.max_hp * 0.25)
+            state.hp = min(state.max_hp, state.hp + h)
+            state.buffs["evasionUp"] = 2
+            logs.append((f"Nimble Recovery heals {h} HP! EVA+15% 2t!", "heal"))
         else:
             h = int(state.stats.get(skill.stat, 10) * 2)
             state.hp = min(state.max_hp, state.hp + h)
@@ -707,6 +806,28 @@ def player_use_skill(state, skill_index):
             h = int(state.stats["wis"] * 2)
             state.hp = min(state.max_hp, state.hp + h)
             logs.append((f"Sanctuary! Barrier x3, Shield {state.shield}, Heal {h}!", "shield"))
+        elif skill.shield_calc == "glyph_1":
+            state.barrier = min(3, state.barrier + 1)
+            logs.append((f"Warding Glyph! Barrier absorbs next hit! ({state.barrier} stacks)", "shield"))
+        elif skill.shield_calc == "fracSan":
+            state.shield = int(state.stats["int"] * 3)
+            state.madness = min(100, state.madness + 10)
+            logs.append((f"Fractured Sanity! Shield {state.shield}! (+10 MAD)", "shield"))
+        elif skill.shield_calc == "str3_hits":
+            state.shield = int(state.stats.get("str", 10) * 3 + state.hits_taken * 5)
+            logs.append((f"Bone Armor: {state.shield} shield!", "shield"))
+        elif skill.shield_calc == "madShell":
+            state.shield = int(state.stats["wis"] * 2 + state.madness)
+            state.madness = min(100, state.madness + 10)
+            logs.append((f"Madness Shell: {state.shield} shield! (+10 MAD)", "shield"))
+        elif skill.shield_calc == "madBarrier":
+            state.shield = int(state.stats["wis"] * 3 + state.luck * 2)
+            logs.append((f"Madness Barrier: {state.shield} shield!", "shield"))
+        elif skill.shield_calc == "madEndur":
+            state.shield = int(state.stats["wis"] * 2)
+            state.madness = min(100, state.madness + 8)
+            state.buffs["regen"] = 2
+            logs.append((f"Madman's Endurance! Shield {state.shield}, regen 5%! (+8 MAD)", "shield"))
         return logs
 
     if skill.type == "self_buff":
@@ -725,6 +846,71 @@ def player_use_skill(state, skill_index):
             hp_loss = int(state.max_hp * 0.20)
             state.hp = max(1, state.hp - hp_loss)
             logs.append((f"Warlord's Command! All buffs active! -{hp_loss} HP!", "effect"))
+        elif skill.buff_type == "permIntWis":
+            state.base_stats["int"] = state.base_stats.get("int", 0) + 2
+            state.base_stats["wis"] = state.base_stats.get("wis", 0) + 1
+            state.recalc_stats()
+            logs.append(("Forbidden Text Deciphered! INT+2, WIS+1 permanently!", "effect"))
+        elif skill.buff_type == "permAtk2":
+            state.base_stats["str"] = state.base_stats.get("str", 0) + 2
+            state.recalc_stats()
+            logs.append(("Warpaint! STR+2 permanently!", "effect"))
+        elif skill.buff_type == "permWisStr":
+            state.base_stats["wis"] = state.base_stats.get("wis", 0) + 2
+            state.base_stats["str"] = state.base_stats.get("str", 0) + 1
+            state.recalc_stats()
+            logs.append(("Oath of the Warden! WIS+2, STR+1 permanently!", "effect"))
+        elif skill.buff_type == "permAgiLuk":
+            state.base_stats["agi"] = state.base_stats.get("agi", 0) + 2
+            state.base_stats["luck"] = state.base_stats.get("luck", 0) + 1
+            state.recalc_stats()
+            logs.append(("Perfect Assassin! AGI+2, LUCK+1 permanently!", "effect"))
+        elif skill.buff_type == "permCrit10":
+            state.crit = min(95, state.crit + 10)
+            logs.append(("Sixth Sense! Crit permanently +10%!", "effect"))
+        elif skill.buff_type == "permAll1":
+            for stat in ("int", "str", "agi", "wis", "luck"):
+                state.base_stats[stat] = state.base_stats.get(stat, 0) + 1
+            state.recalc_stats()
+            logs.append(("Vision of the End! All stats +1 permanently!", "effect"))
+        elif skill.buff_type == "resetCds":
+            for sk in state.active_skills:
+                sk.current_cd = 0
+            logs.append(("All cooldowns reset!", "effect"))
+        elif skill.buff_type == "bloodRitual":
+            state.hp = max(1, state.hp - int(state.max_hp * 0.15))
+            state.xp += 50
+            logs.append(("Blood Ritual! Sacrificed HP for 50 XP!", "effect"))
+        elif skill.buff_type == "randStat2":
+            stat_keys = ["int", "str", "agi", "wis", "luck"]
+            chosen_stats = random.sample(stat_keys, 2)
+            for st in chosen_stats:
+                state.base_stats[st] = state.base_stats.get(st, 0) + 2
+            state.recalc_stats()
+            logs.append((f"Prophetic Insight! {chosen_stats[0].upper()}+2, {chosen_stats[1].upper()}+2!", "effect"))
+        elif skill.buff_type == "madImmune":
+            state.buffs["madImmune"] = 999
+            state.madness = min(100, state.madness + 15)
+            logs.append(("Madness Mastery! MAD no longer causes death! (+15 MAD)", "effect"))
+        elif skill.buff_type == "thickSkull":
+            state.base_stats["str"] = state.base_stats.get("str", 0) + 1
+            state.base_stats["wis"] = state.base_stats.get("wis", 0) + 1
+            state.recalc_stats()
+            logs.append(("Thick Skull! STR+1, WIS+1 permanently!", "effect"))
+        elif skill.buff_type == "perseverance":
+            state.base_stats["wis"] = state.base_stats.get("wis", 0) + 1
+            state.base_stats["str"] = state.base_stats.get("str", 0) + 1
+            state.recalc_stats()
+            logs.append(("Perseverance! WIS+1, STR+1 permanently!", "effect"))
+        elif skill.buff_type == "shadowBless":
+            state.base_stats["agi"] = state.base_stats.get("agi", 0) + 1
+            state.base_stats["luck"] = state.base_stats.get("luck", 0) + 1
+            state.recalc_stats()
+            logs.append(("Shadow's Blessing! AGI+1, LUCK+1 permanently!", "effect"))
+        elif skill.buff_type == "abyssFort":
+            state.buffs["ironSkin"] = skill.buff_duration
+            state.barrier = min(3, state.barrier + 1)
+            logs.append(("Abyssal Fortitude! pDEF+50%, +1 barrier!", "effect"))
         elif skill.buff_type:
             state.buffs[skill.buff_type] = skill.buff_duration
             logs.append((f"{skill.name} activated!", "effect"))
