@@ -91,7 +91,19 @@ Last updated: 2026-03-28 06:08
 - Fixed Loot screen: stat text inside buttons respects button bounds
 - Verified: 35/35 expected assets present, 2/2 fonts loaded, all code compiles clean
 
+### ✅ Step 21: Fix Combat → Inventory/Save Bug (Session 11 — 2026-03-28)
+- Bug: Opening inventory or save from combat immediately left combat, losing all combat state
+- Root cause: InventoryScreen defaulted `prev_screen = "explore"`, SaveScreen hardcoded "explore" return
+- Fix: InventoryScreen now tracks `self.game._current_screen_name` and checks combat state
+- Fix: SaveScreen now tracks where it was opened from and uses `_get_return_screen()` helper
+- Save/Load from combat now correctly returns to combat screen after closing
+
 ### Pending
+- #8: Refactor `player_use_skill()` (300+ lines if/elif → handler functions)
+- #9: Cache `draw_text_with_glow()` — pre-render glow surfaces per unique string+font+color
+- #10: Add automated combat simulation tests
+- #11: Split `pygame_game.py` screens into separate modules
+- #12: Improve texture caching (atlas or tile-based approach)
 - Further text spacing polish if needed (exploration, equipment, general cleanup)
 
 ### ✅ Step 14: Exploration Path Icons + Two-Line Descriptions (Session 9 — 2026-03-27)

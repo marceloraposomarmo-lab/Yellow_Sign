@@ -167,6 +167,14 @@ game/
 4. Save GAME_MEMORY.md after EVERY step with new learnings
 5. Verify syntax with `python3 -c "import py_compile; py_compile.compile(...)"`
 
+## Bug Fixes (Session 11 — 2026-03-28)
+### Combat → Inventory/Save Bug (Fixed)
+- **Symptom**: Opening inventory or save screen from combat immediately exited combat, losing all combat state
+- **Root cause**: `InventoryScreen.enter()` set `self.prev_screen = "combat" if self.game.state.combat else "explore"` but this ran BEFORE the screen name was set in the game's `_current_screen_name`. Also, the combat screen called `self.game.switch_screen("inventory")` but the inventory didn't know the previous screen was combat.
+- **Fix in InventoryScreen.enter()**: Now reads `self.game._current_screen_name` first, then overrides to "combat" if combat is active
+- **Fix in SaveScreen**: Added `self.prev_screen` tracking and `_get_return_screen()` helper that checks combat state. All return paths (back button, escape key, after save) use this helper.
+- **LoadScreen**: Inherits from SaveScreen, loading always transitions to explore (correct behavior — loaded games start in explore)
+
 ## Known Issues / Future Work
 - Some buff types still unimplemented (bladeAura, copyAttack, skipCombat, realityAnchor, etc.) — low priority, not used by any current skill
 - `player_use_skill()` is 300+ lines of if/elif — consider refactoring into handler functions per skill type

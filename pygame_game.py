@@ -1772,7 +1772,11 @@ class InventoryScreen(Screen):
         self.prev_screen = "explore"
 
     def enter(self):
-        self.prev_screen = "combat" if self.game.state.combat else "explore"
+        # Preserve the screen we came from — check the game's current screen name
+        self.prev_screen = self.game._current_screen_name
+        # If we were just in combat, go back to combat
+        if self.game.state and self.game.state.combat:
+            self.prev_screen = "combat"
 
     def handle_event(self, event):
         s = self.game.state
@@ -2862,23 +2866,37 @@ class SaveScreen(Screen):
         self.slot_buttons = []
         self.back_btn = None
         self.mode = "save"
+        self.prev_screen = "explore"
 
     def enter(self):
         self.mode = "save" if self.game.state else "load"
+        # Track where we came from
+        if self.game.state and self.game.state.combat:
+            self.prev_screen = "combat"
+        elif self.game.state:
+            self.prev_screen = "explore"
+        else:
+            self.prev_screen = "title"
         bw, bh = 400, 50
         cx = SCREEN_W // 2
         self.slot_buttons = [pygame.Rect(cx - bw // 2, 140 + i * 65, bw, bh) for i in range(5)]
         self.back_btn = pygame.Rect(cx - 60, 140 + 5 * 65 + 10, 120, 40)
+
+    def _get_return_screen(self):
+        """Return to the correct screen after save/load actions."""
+        if self.game.state and self.game.state.combat:
+            return "combat"
+        return self.prev_screen
 
     def handle_event(self, event):
         all_btns = self.slot_buttons + ([self.back_btn] if self.back_btn else [])
         self.update_hover(event, all_btns)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                self.game.switch_screen("explore" if self.game.state else "title")
+                self.game.switch_screen(self._get_return_screen())
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.back_btn and self.back_btn.collidepoint(event.pos):
-                self.game.switch_screen("explore" if self.game.state else "title")
+                self.game.switch_screen(self._get_return_screen())
                 return
             for i, btn in enumerate(self.slot_buttons):
                 if btn.collidepoint(event.pos):
@@ -2888,7 +2906,7 @@ class SaveScreen(Screen):
         s = self.game.state
         if self.mode == "save" and s:
             save_game(s, slot)
-            self.game.switch_screen("explore")
+            self.game.switch_screen(self._get_return_screen())
         else:
             loaded = load_game(slot)
             if loaded:
