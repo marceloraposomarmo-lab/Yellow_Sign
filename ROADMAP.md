@@ -118,8 +118,18 @@ Last updated: 2026-03-28 06:08
 - `draw_text_wrapped_glow()` and `draw_text_fitted_glow()` automatically benefit (they call the cached version per line)
 - Huge performance win on screens with lots of text (inventory, class select, shop)
 
+### ✅ Step 24: Automated Combat Simulation Tests (Session 11 — 2026-03-28)
+- Created `tests/test_combat.py` — 19 test suites, 271 assertions
+- Tests cover: state init (5 classes), damage calc, damage application, all class combat,
+  skill type validation, buff system (apply/expire), regen, debuff immunity, poison stacking,
+  cooldowns, enemy AI, boss phases, flee attempts, item generation, madness death, HP cost,
+  lifesteal, and full combat simulations (200-turn cap per class)
+- Deterministic with seed(42) for reproducibility
+- Run: `python3 tests/test_combat.py`
+- Can catch regressions in: buff logic, damage math, skill handlers, combat flow
+
 ### Pending
-- #10: Add automated combat simulation tests
+- #11: Split `pygame_game.py` screens into separate modules
 - #11: Split `pygame_game.py` screens into separate modules
 - #12: Improve texture caching (atlas or tile-based approach)
 - #9: Cache `draw_text_with_glow()` — pre-render glow surfaces per unique string+font+color

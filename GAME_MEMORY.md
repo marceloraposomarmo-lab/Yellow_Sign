@@ -192,7 +192,7 @@ game/
 - Parchment texture cache by (w,h) tuple — could use atlas or tile approach
 - No automated tests
 - `draw_text_with_glow()` renders text 8+ times per call — performance bottleneck, consider caching
-- No automated tests — one bad number in skill dict can break combat silently
+- ~~No automated tests — one bad number in skill dict can break combat silently~~ → FIXED: `tests/test_combat.py` — 19 suites, 271 assertions. Covers state init, damage calc, all 5 classes, skill types, buffs, regen, immunity, poison, cooldowns, enemy AI, boss phases, flee, item gen, madness death, HP cost, lifesteal, full combat sim. Run: `python3 tests/test_combat.py`
 
 ## Class Select Overhaul Details (Step 10)
 - Redesigned from all-5-at-once to one-class-per-page
