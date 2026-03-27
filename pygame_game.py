@@ -1215,7 +1215,9 @@ class ExploreScreen(Screen):
             start_combat(s, is_boss=True)
             self.game.switch_screen("combat")
             return
-        self.paths = generate_paths(s.floor)
+        # Only generate new paths if we don't have any (don't regenerate on inventory/stats visit)
+        if not self.paths:
+            self.paths = generate_paths(s.floor)
         self._build_buttons()
 
     def _build_buttons(self):
@@ -1276,6 +1278,8 @@ class ExploreScreen(Screen):
     def _choose_path(self, idx):
         s = self.game.state
         path = self.paths[idx]
+        # Clear paths so next room generates fresh ones
+        self.paths = []
         s.rooms_explored += 1
         if s.add_madness(2):
             self.game.gameover_msg = "Your mind shatters. The Yellow Sign consumes your last rational thought."
@@ -1601,6 +1605,48 @@ class CombatScreen(Screen):
             self.game.gameover_msg = "Your body crumples. The last thing you see is the Yellow Sign, burning brighter than ever."
             self.game.switch_screen("gameover")
 
+    def _draw_skill_tooltip(self, surface, sk, btn_rect):
+        """Draw a popup tooltip above a skill button showing description and formula."""
+        font = self.assets.fonts["tiny"]
+        padding = 10
+        max_w = 380
+
+        # Build tooltip lines
+        lines = []
+        # Description (word-wrap if needed)
+        desc_words = sk.desc.split()
+        line = ""
+        for w in desc_words:
+            test = f"{line} {w}".strip()
+            if font.size(test)[0] > max_w - padding * 2:
+                lines.append(line)
+                line = w
+            else:
+                line = test
+        if line:
+            lines.append(line)
+        # Formula line
+        lines.append(sk.formula)
+
+        line_h = font.get_height() + 3
+        tip_w = max_w
+        tip_h = padding * 2 + len(lines) * line_h
+        tip_x = btn_rect.x
+        tip_y = btn_rect.y - tip_h - 6
+        if tip_y < 10:
+            tip_y = btn_rect.bottom + 6
+
+        # Background + border
+        bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+        bg.fill((10, 8, 20, 230))
+        surface.blit(bg, (tip_x, tip_y))
+        pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
+
+        for i, l in enumerate(lines):
+            color = C.PARCHMENT_EDGE if i == len(lines) - 1 else C.INK
+            draw_text_with_glow(surface, l, font, color,
+                                tip_x + padding, tip_y + padding + i * line_h)
+
     def draw(self, surface):
         s = self.game.state
         c = s.combat
@@ -1687,14 +1733,10 @@ class CombatScreen(Screen):
                                hover=(i == self.hover_idx and not on_cd),
                                color=C.CRIMSON if on_cd else C.PARCHMENT_EDGE, disabled=on_cd)
 
-        # Skill description on hover
+        # Skill tooltip popup on hover (above the button, like class select)
         if 0 <= self.hover_idx < len(s.active_skills):
             sk = s.active_skills[self.hover_idx]
-            desc_y = SCREEN_H - 28
-            desc_text = f"{sk.desc}  |  {sk.formula}"
-            desc_text = fit_text(self.assets.fonts["tiny"], desc_text, SCREEN_W - 60)
-            draw_text_with_glow(surface, desc_text, self.assets.fonts["tiny"],
-                      C.INK, SCREEN_W // 2, desc_y, align="center")
+            self._draw_skill_tooltip(surface, sk, self.skill_buttons[self.hover_idx])
 
         # Command buttons
         can_run = not c.is_boss
@@ -2029,10 +2071,15 @@ class LootScreen(Screen):
         self.items = [generate_item(s.floor, luck=s.luck) for _ in range(count)]
         self.gold_found = 5 + random.randint(0, 10) + s.floor * 2
         s.gold += self.gold_found
-        bh = 80
         cx = SCREEN_W // 2
-        self.pick_buttons = [pygame.Rect(cx - 200, 180 + i * 100, 400, bh) for i in range(len(self.items))]
-        self.leave_btn = pygame.Rect(cx - 100, 180 + len(self.items) * 100 + 15, 200, 40)
+        self.pick_buttons = []
+        y = 130
+        for item in self.items:
+            # Taller buttons for items with debuffs
+            bh = 90 if item.debuffs else 70
+            self.pick_buttons.append(pygame.Rect(cx - 250, y, 500, bh))
+            y += bh + 12
+        self.leave_btn = pygame.Rect(cx - 100, y + 8, 200, 40)
 
     def handle_event(self, event):
         s = self.game.state
@@ -2053,28 +2100,42 @@ class LootScreen(Screen):
                 self.game.switch_screen("explore")
 
     def draw(self, surface):
-        panel_w, panel_h = 500, 200 + len(self.items) * 105
+        # Dynamic panel height based on actual button positions
+        panel_w = 560
+        if self.pick_buttons:
+            last_btn = self.pick_buttons[-1]
+            panel_h = min(last_btn.bottom + 70, SCREEN_H - 20)
+        else:
+            panel_h = 300
         panel_x = SCREEN_W // 2 - panel_w // 2
-        draw_parchment_panel(surface, panel_x, 20, panel_w, min(panel_h, 560))
+        draw_parchment_panel(surface, panel_x, 10, panel_w, panel_h)
 
         draw_text_with_glow(surface, "SALVAGE FOUND", self.assets.fonts["heading"],
-                  C.PARCHMENT_EDGE, SCREEN_W // 2, 35, align="center")
-        draw_gold_divider(surface, SCREEN_W // 2 - 120, 70, 240)
+                  C.PARCHMENT_EDGE, SCREEN_W // 2, 25, align="center")
+        draw_gold_divider(surface, SCREEN_W // 2 - 120, 58, 240)
         draw_text_with_glow(surface, f"+{self.gold_found} Gold", self.assets.fonts["body"],
-                  C.PARCHMENT_EDGE, SCREEN_W // 2, 82, align="center")
+                  C.PARCHMENT_EDGE, SCREEN_W // 2, 70, align="center")
 
         for i, (item, btn) in enumerate(zip(self.items, self.pick_buttons)):
             color = rarity_color(item.rarity)
             rd = RARITY_DATA[item.rarity]
-            label = fit_text(self.assets.fonts["body"],
-                             f"{item.name} ({item.slot.upper()}, {rd['name']})", btn.w - 20)
-            draw_ornate_button(surface, btn, label,
-                               self.assets.fonts["body"], hover=(i == self.hover_idx), color=color)
-            # Stats inside button, below the name text
-            stat_label = fit_text(self.assets.fonts["tiny"], item.stat_text(), btn.w - 30)
-            stat_y = btn.y + btn.h // 2 + 6
-            draw_text_with_glow(surface, stat_label, self.assets.fonts["tiny"],
-                      C.INK, btn.centerx, stat_y, align="center")
+            # Button background with hover
+            draw_ornate_button(surface, btn, "", self.assets.fonts["tiny"],
+                               hover=(i == self.hover_idx), color=color)
+            # Item name + slot + rarity on line 1
+            label = f"{item.name}  ({item.slot.upper()}, {rd['name']})"
+            label = fit_text(self.assets.fonts["small"], label, btn.w - 30)
+            draw_text_with_glow(surface, label, self.assets.fonts["small"], color,
+                                btn.x + 15, btn.y + 8)
+            # Stats on line 2 (full, not truncated)
+            stat_line = item.stat_text()
+            draw_text_with_glow(surface, stat_line, self.assets.fonts["tiny"],
+                                C.INK, btn.x + 15, btn.y + 32)
+            # Debuffs on line 3 (if cursed)
+            if item.debuffs:
+                debuff_line = item.debuff_text()
+                draw_text_with_glow(surface, debuff_line, self.assets.fonts["tiny"],
+                                    C.CRIMSON, btn.x + 15, btn.y + 52)
 
         leave_hover = (len(self.pick_buttons) == self.hover_idx)
         draw_ornate_button(surface, self.leave_btn, "Leave it", self.assets.fonts["body"],
@@ -2262,9 +2323,14 @@ class CombatResultScreen(Screen):
     def draw(self, surface):
         r = self.game.combat_result
 
-        panel_w, panel_h = 500, 220
+        loot = r["loot"]
+        # Taller panel for cursed items with debuffs
+        panel_h = 250 if loot.debuffs else 220
+        panel_w = 520
+        panel_y = 40
+        panel_h = 250 if loot.debuffs else 220
         panel_x = SCREEN_W // 2 - panel_w // 2
-        draw_parchment_panel(surface, panel_x, 40, panel_w, panel_h)
+        draw_parchment_panel(surface, panel_x, panel_y, panel_w, panel_h)
 
         title = "VICTORY" if r["victory"] else "DEFEAT"
         title_color = C.PARCHMENT_EDGE if r["victory"] else C.CRIMSON
@@ -2275,21 +2341,27 @@ class CombatResultScreen(Screen):
         draw_text_with_glow(surface, f"+{r['gold']} Gold    +{r['xp']} XP",
                   self.assets.fonts["body"], C.PARCHMENT_EDGE, SCREEN_W // 2, 100, align="center")
 
-        loot = r["loot"]
         color = rarity_color(loot.rarity)
         rd = RARITY_DATA[loot.rarity]
-        drop_text = fit_text(self.assets.fonts["body"],
-                             f"Dropped: {loot.name} ({loot.slot.upper()}, {rd['name']})", 480)
+        drop_text = f"Dropped: {loot.name} ({loot.slot.upper()}, {rd['name']})"
+        drop_text = fit_text(self.assets.fonts["body"], drop_text, panel_w - 40)
         draw_text_with_glow(surface, drop_text,
                   self.assets.fonts["body"], color, SCREEN_W // 2, 140, align="center")
-        stat_text = fit_text(self.assets.fonts["small"], loot.stat_text(), 480)
+        # Full stat line (not truncated)
+        stat_text = loot.stat_text()
         draw_text_with_glow(surface, stat_text, self.assets.fonts["small"],
                   C.INK, SCREEN_W // 2, 170, align="center")
+        # Debuff line (if cursed)
+        if loot.debuffs:
+            debuff_text = loot.debuff_text()
+            draw_text_with_glow(surface, debuff_text, self.assets.fonts["small"],
+                      C.CRIMSON, SCREEN_W // 2, 194, align="center")
 
         if not self.chosen:
+            btn_y = panel_y + panel_h - 55
             cx = SCREEN_W // 2
-            self.equip_btn = pygame.Rect(cx - 210, 210, 200, 45)
-            self.backpack_btn = pygame.Rect(cx + 10, 210, 200, 45)
+            self.equip_btn = pygame.Rect(cx - 210, btn_y, 200, 45)
+            self.backpack_btn = pygame.Rect(cx + 10, btn_y, 200, 45)
             draw_ornate_button(surface, self.equip_btn, "[1] Equip", self.assets.fonts["body"],
                                hover=(0 == self.hover_idx), color=C.PARCHMENT_EDGE)
             draw_ornate_button(surface, self.backpack_btn, "[2] Backpack", self.assets.fonts["body"],
