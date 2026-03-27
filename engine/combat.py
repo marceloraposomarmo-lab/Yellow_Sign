@@ -404,9 +404,6 @@ def tick_player_buffs(state):
             h = int(state.max_hp * 0.10)
             state.hp = min(state.max_hp, state.hp + h)
             logs.append((f"Oath heals {h} HP.", "heal"))
-        elif key == "calmMind" and state.buffs[key] >= 0:
-            state.madness = max(0, state.madness - 3)
-            logs.append(("Calm Mind reduces madness by 3.", "heal"))
         if state.buffs[key] <= 0:
             to_remove.append(key)
 
@@ -421,6 +418,7 @@ def tick_player_buffs(state):
         "perseverance": ["wis", "str"],
         "shadowBless": ["agi", "luck"],
         "randStat2": ["int", "str", "agi", "wis", "luck"],  # cleared fully on expire
+        "pallidMask": ["int", "str", "agi", "wis", "luck"],
     }
 
     for key in to_remove:
@@ -653,6 +651,35 @@ def player_use_skill(state, skill_index):
             state.buffs["madImmune"] = 999
             state.madness = min(100, state.madness + 15)
             logs.append(("Madness Mastery! MAD no longer causes death! (+15 MAD)", "effect"))
+        elif skill.buff_type == "calmMind":
+            state.madness = max(0, state.madness - 3)
+            logs.append(("Leng's Whisper muffles the madness. -3 MAD!", "heal"))
+        elif skill.buff_type == "eldritchBargain":
+            stat_keys = ["int", "str", "agi", "wis", "luck"]
+            chosen_stats = random.sample(stat_keys, 3)
+            for st in chosen_stats:
+                state.base_stats[st] = max(1, state.base_stats.get(st, 1) - 3)
+            state.recalc_stats()
+            state.gold += 50
+            logs.append((f"Eldritch Bargain! -3 to {', '.join(s.upper() for s in chosen_stats)}, +50 gold!", "effect"))
+        elif skill.buff_type == "foolLuck":
+            state.madness = max(0, state.madness - 10)
+            state.buffs["divineInterv"] = 3
+            logs.append(("The Fool's Luck! -10 MAD, nullify next 3 attacks!", "effect"))
+        elif skill.buff_type == "realityAnchor":
+            state.buffs["undying"] = skill.buff_duration
+            logs.append(("Reality Anchor! Cannot die for 2 turns!", "effect"))
+        elif skill.buff_type == "pallidMask":
+            for stat in ("int", "str", "agi", "wis", "luck"):
+                state.temp_stats[stat] = state.temp_stats.get(stat, 0) + int(state.base_stats.get(stat, 5) * 0.5)
+            state.buffs["pallidMask"] = skill.buff_duration
+            state.buffs["immunity"] = skill.buff_duration
+            state.recalc_stats()
+            logs.append(("The Pallid Mask manifests! +50% all stats, immune to debuffs 3t!", "effect"))
+        elif skill.buff_type == "prophetRes":
+            state.madness = min(100, state.madness + 5)
+            state.buffs["regen"] = skill.buff_duration
+            logs.append(("Prophet's Resilience! Regen 6% HP/turn. (+5 MAD)", "effect"))
         elif skill.buff_type == "thickSkull":
             state.temp_stats["str"] = state.temp_stats.get("str", 0) + 4
             state.temp_stats["wis"] = state.temp_stats.get("wis", 0) + 3
@@ -836,6 +863,9 @@ def apply_status_effect_on_player(state, effect_type, duration):
 
 def apply_status_player(state, effect_type, duration):
     """Apply status to player's status list."""
+    # Debuff immunity check
+    if state.buffs.get("immunity", 0) > 0:
+        return
     existing = next((s for s in state.statuses if s.type == effect_type), None)
     if existing:
         existing.duration = max(existing.duration, duration)
