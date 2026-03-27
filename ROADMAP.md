@@ -167,6 +167,15 @@ Last updated: 2026-03-28 07:52
 - Rapid switches force-complete the pending transition immediately
 - Transition overlay drawn on top of current frame with interpolated alpha
 
+### ✅ Step 27: Particle Effects (Session 13 — 2026-03-28)
+- Explore screen: 40 ambient dust motes drifting upward (brownish, low alpha, respawn on death)
+- Combat screen: 25 ambient eldritch energy particles (purple/violet, slow drift)
+- Combat blood splatter: on damage dealt, spawn blood particles at damage location
+  - Normal hit: 10 red particles, random velocity
+  - Critical hit: 16 red particles (bigger burst)
+- Particles update in screen.update(dt), drawn behind UI with screen shake offset in combat
+- Title screen already had particles (unchanged)
+
 ### ✅ Step 14: Exploration Path Icons + Two-Line Descriptions (Session 9 — 2026-03-27)
 - Added 6 new path choice icons: Enemy_Ahead_F.png, Boss_Ahead_F.png, Shop_Ahead_F.png, Item_Ahead.png, Rest_Ahead_F.jfif, Decision_Ahead.png
 - PATH_ICON_FILES mapping in pygame_game.py: combat→Enemy, shop→Shop, rest→Rest, loot→Item, event/trap→Decision, boss→Boss
