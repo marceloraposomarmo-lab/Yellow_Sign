@@ -37,9 +37,9 @@ class InventoryScreen(Screen):
     def draw(self, surface):
         s = self.game.state
 
-        draw_parchment_panel(surface, 30, 10, SCREEN_W - 60, SCREEN_H - 80)
+        draw_parchment_panel(surface, 15, 10, SCREEN_W - 30, SCREEN_H - 80)
         draw_text_with_glow(surface, "INVENTORY", self.assets.fonts["heading"],
-                  C.PARCHMENT_EDGE, SCREEN_W // 2, 22, align="center")
+                  C.PARCHMENT_EDGE, SCREEN_W // 2, 20, align="center")
         draw_gold_divider(surface, SCREEN_W // 2 - 150, 55, 300)
 
         # Equipped items
