@@ -1423,9 +1423,9 @@ class CombatScreen(Screen):
         # Command buttons below skills
         cmd_y = start_y + ((len(s.active_skills) + 1) // cols) * (bh + 8) + 15
         self.cmd_buttons = {
-            "run": pygame.Rect(30, cmd_y, 120, 36),
-            "inventory": pygame.Rect(160, cmd_y, 120, 36),
-            "save": pygame.Rect(290, cmd_y, 120, 36),
+            "run": pygame.Rect(30, cmd_y, 135, 36),
+            "inventory": pygame.Rect(175, cmd_y, 135, 36),
+            "save": pygame.Rect(320, cmd_y, 135, 36),
         }
 
     def add_damage_number(self, text, x, y, color):
@@ -2464,6 +2464,39 @@ class LevelUpScreen(Screen):
             s.pending_levelup_skills = []
             self.game.switch_screen("explore")
 
+    def _draw_skill_tooltip(self, surface, sk, btn_rect):
+        """Draw a popup tooltip showing skill description and formula."""
+        font = self.assets.fonts["tiny"]
+        padding = 8
+        max_w = 380
+        lines = []
+        desc_words = sk.desc.split()
+        line = ""
+        for w in desc_words:
+            test = f"{line} {w}".strip()
+            if font.size(test)[0] > max_w - padding * 2:
+                lines.append(line)
+                line = w
+            else:
+                line = test
+        if line:
+            lines.append(line)
+        lines.append(sk.formula)
+        line_h = font.get_height() + 3
+        tip_h = padding * 2 + len(lines) * line_h
+        tip_w = max_w
+        tip_x = btn_rect.x
+        tip_y = btn_rect.y - tip_h - 4
+        if tip_y < 10:
+            tip_y = btn_rect.bottom + 4
+        bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+        bg.fill((10, 8, 20, 230))
+        surface.blit(bg, (tip_x, tip_y))
+        pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
+        for i, l in enumerate(lines):
+            lc = C.PARCHMENT_EDGE if i == len(lines) - 1 else C.INK
+            draw_text_with_glow(surface, l, font, lc, tip_x + padding, tip_y + padding + i * line_h)
+
     def draw(self, surface):
         s = self.game.state
 
@@ -2483,8 +2516,11 @@ class LevelUpScreen(Screen):
             draw_text_with_glow(surface, "CHOOSE ABILITY TO REPLACE", self.assets.fonts["body"],
                       C.CRIMSON, SCREEN_W // 2, 130, align="center")
             for i, (sk, btn) in enumerate(zip(s.active_skills, self.replace_buttons)):
-                draw_ornate_button(surface, btn, f"{i+1}. {sk.name} — {sk.desc}",
-                                   self.assets.fonts["small"], hover=(i == self.hover_idx), color=C.PARCHMENT_EDGE)
+                hovered = (i == self.hover_idx)
+                draw_ornate_button(surface, btn, f"{i+1}. {sk.name}",
+                                   self.assets.fonts["small"], hover=hovered, color=C.PARCHMENT_EDGE)
+                if hovered:
+                    self._draw_skill_tooltip(surface, sk, btn)
             cancel_btn = self.replace_buttons[-1] if self.replace_buttons else None
             if cancel_btn:
                 draw_ornate_button(surface, cancel_btn, f"{len(s.active_skills)+1}. Cancel",
@@ -2497,10 +2533,11 @@ class LevelUpScreen(Screen):
                           self.assets.fonts["tiny"], C.CRIMSON, SCREEN_W // 2, 152, align="center")
 
             for i, (sk, btn) in enumerate(zip(s.pending_levelup_skills, self.skill_buttons)):
+                hovered = (i == self.hover_idx)
                 draw_ornate_button(surface, btn, f"[{i+1}] {sk.name}", self.assets.fonts["body"],
-                                   hover=(i == self.hover_idx), color=C.PARCHMENT_EDGE)
-                draw_text_with_glow(surface, sk.desc, self.assets.fonts["tiny"], C.INK,
-                          btn.centerx, btn.bottom + 2, align="center")
+                                   hover=hovered, color=C.PARCHMENT_EDGE)
+                if hovered:
+                    self._draw_skill_tooltip(surface, sk, btn)
 
             draw_ornate_button(surface, self.skip_btn, "Skip", self.assets.fonts["small"],
                                hover=(len(s.pending_levelup_skills) == self.hover_idx), color=C.PARCHMENT_EDGE)
@@ -2642,9 +2679,11 @@ class StatsScreen(Screen):
     def __init__(self, game):
         super().__init__(game)
         self.back_btn = None
+        self.skill_buttons = []
 
     def handle_event(self, event):
-        self.update_hover(event, [self.back_btn] if self.back_btn else [])
+        all_btns = self.skill_buttons + ([self.back_btn] if self.back_btn else [])
+        self.update_hover(event, all_btns)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                 self.game.switch_screen("explore")
@@ -2745,21 +2784,66 @@ class StatsScreen(Screen):
                 draw_text_with_glow(surface, f"Barrier: x{s.barrier}", self.assets.fonts["small"], C.FROST, rx, ry)
                 ry += 24
 
-        # Active skills list — compact, inside the panel
+        # Active skills list — compact buttons with hover tooltips
         skills_y = max(y, ry) + 8
         draw_gold_divider(surface, 50, skills_y, SCREEN_W - 110)
         skills_y += 10
         draw_text_with_glow(surface, f"Active Skills ({len(s.active_skills)}/{MAX_ACTIVE_SKILLS})",
                   self.assets.fonts["small"], C.INK, 55, skills_y)
-        skills_y += 24
-        max_y = SCREEN_H - 100  # keep within panel bounds
-        for sk in s.active_skills:
-            if skills_y + 18 > max_y:
+        skills_y += 28
+
+        self.skill_buttons = []
+        max_y = SCREEN_H - 100
+        for i, sk in enumerate(s.active_skills):
+            if skills_y + 28 > max_y:
                 break
-            label = f"  {sk.name} — {sk.desc}"
-            label = fit_text(self.assets.fonts["tiny"], label, SCREEN_W - 120)
-            draw_text_with_glow(surface, label, self.assets.fonts["tiny"], C.INK, 55, skills_y)
-            skills_y += 18
+            btn = pygame.Rect(55, skills_y, 350, 28)
+            self.skill_buttons.append(btn)
+            hovered = (i == self.hover_idx)
+            label = fit_text(self.assets.fonts["tiny"], f"{sk.name}", 338)
+            draw_ornate_button(surface, btn, label, self.assets.fonts["tiny"],
+                               hover=hovered, color=C.PARCHMENT_EDGE)
+            # Show desc on same line to the right of the button
+            desc_text = fit_text(self.assets.fonts["tiny"], sk.desc, SCREEN_W - 440)
+            draw_text_with_glow(surface, desc_text, self.assets.fonts["tiny"],
+                                C.INK_LIGHT, 415, skills_y + 5)
+            # Tooltip on hover
+            if hovered:
+                self._draw_skill_tooltip(surface, sk, btn)
+            skills_y += 34
+
+    def _draw_skill_tooltip(self, surface, sk, btn_rect):
+        """Draw a popup tooltip showing skill description and formula."""
+        font = self.assets.fonts["tiny"]
+        padding = 8
+        max_w = 380
+        lines = []
+        desc_words = sk.desc.split()
+        line = ""
+        for w in desc_words:
+            test = f"{line} {w}".strip()
+            if font.size(test)[0] > max_w - padding * 2:
+                lines.append(line)
+                line = w
+            else:
+                line = test
+        if line:
+            lines.append(line)
+        lines.append(sk.formula)
+        line_h = font.get_height() + 3
+        tip_h = padding * 2 + len(lines) * line_h
+        tip_w = max_w
+        tip_x = btn_rect.x
+        tip_y = btn_rect.y - tip_h - 4
+        if tip_y < 10:
+            tip_y = btn_rect.bottom + 4
+        bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+        bg.fill((10, 8, 20, 230))
+        surface.blit(bg, (tip_x, tip_y))
+        pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
+        for i, l in enumerate(lines):
+            lc = C.PARCHMENT_EDGE if i == len(lines) - 1 else C.INK
+            draw_text_with_glow(surface, l, font, lc, tip_x + padding, tip_y + padding + i * line_h)
 
         # Back button
         self.back_btn = pygame.Rect(SCREEN_W // 2 - 60, SCREEN_H - 65, 120, 40)
