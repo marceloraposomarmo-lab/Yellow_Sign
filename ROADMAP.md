@@ -109,8 +109,19 @@ Last updated: 2026-03-28 06:08
 - All 48 existing skill behaviors preserved exactly (heal, shield, buff handlers)
 - Damage-dealing path unchanged
 
+### ✅ Step 23: Cache draw_text_with_glow() — Pre-render Glow Surfaces (Session 11 — 2026-03-28)
+- Problem: Each `draw_text_with_glow()` call did ~25 `font.render()` calls (8 glow layers + main)
+- Fix: `_render_glow_surface()` pre-composites all glow offsets into one RGBA surface
+- Cache keyed by (text, font_id, color, glow_color, glow_radius) → (glow_surf, main_surf, ...)
+- Cache hit: 2 blits instead of 25 font.render() calls (12x reduction in render work)
+- Cache limited to 4096 entries, evicts 25% oldest on overflow
+- `draw_text_wrapped_glow()` and `draw_text_fitted_glow()` automatically benefit (they call the cached version per line)
+- Huge performance win on screens with lots of text (inventory, class select, shop)
+
 ### Pending
-- #9: Cache `draw_text_with_glow()` — pre-render glow surfaces per unique string+font+color
+- #10: Add automated combat simulation tests
+- #11: Split `pygame_game.py` screens into separate modules
+- #12: Improve texture caching (atlas or tile-based approach)
 - #9: Cache `draw_text_with_glow()` — pre-render glow surfaces per unique string+font+color
 - #10: Add automated combat simulation tests
 - #11: Split `pygame_game.py` screens into separate modules

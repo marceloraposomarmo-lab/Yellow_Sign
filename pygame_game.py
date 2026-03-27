@@ -763,14 +763,30 @@ def draw_parchment_panel(surface, x, y, w, h, title=None, title_font=None):
                             x + w // 2, y + 3, align="center")
 
 
-def draw_text_with_glow(surface, text, font, color, x, y, align="left",
-                         glow_color=None, glow_radius=2):
-    """Draw text with an ethereal purple glow/shadow for readability on obsidian."""
-    if glow_color is None:
-        # Ethereal purple glow for eldritch text
-        glow_color = (100, 60, 160)
+# Glow text cache: key → (glow_surface, main_surface, text_w, text_h, glow_radius)
+# Key = (text, font_id, color, glow_color, glow_radius)
+# Limits to 4096 entries to avoid unbounded memory growth
+_glow_text_cache = {}
+_GLOW_CACHE_MAX = 4096
 
-    # Draw glow layers (offset in 8 directions)
+
+def _make_glow_cache_key(text, font, color, glow_color, glow_radius):
+    """Build a hashable cache key for glow text."""
+    return (text, id(font), color, glow_color, glow_radius)
+
+
+def _render_glow_surface(text, font, glow_color, glow_radius):
+    """Pre-compute a single surface with all glow layers composited."""
+    # Render main text to get dimensions
+    main_surf = font.render(text, True, (255, 255, 255))
+    tw, th = main_surf.get_size()
+
+    # Create a larger surface to contain the glow spread
+    pad = glow_radius * 2 + 2
+    gw, gh = tw + pad * 2, th + pad * 2
+    glow_combined = pygame.Surface((gw, gh), pygame.SRCALPHA)
+
+    # Draw each glow offset onto the combined surface
     for dx in range(-glow_radius, glow_radius + 1):
         for dy in range(-glow_radius, glow_radius + 1):
             if dx == 0 and dy == 0:
@@ -779,32 +795,65 @@ def draw_text_with_glow(surface, text, font, color, x, y, align="left",
             if dist > glow_radius:
                 continue
             alpha = max(1, int(60 / (dist + 1)))
-            glow_surf = font.render(text, True, glow_color)
-            glow_surf.set_alpha(alpha)
-            rect = glow_surf.get_rect()
-            if align == "center":
-                rect.centerx = x + dx
-                rect.top = y + dy
-            elif align == "right":
-                rect.right = x + dx
-                rect.top = y + dy
-            else:
-                rect.topleft = (x + dx, y + dy)
-            surface.blit(glow_surf, rect)
+            glow_layer = font.render(text, True, glow_color)
+            glow_layer.set_alpha(alpha)
+            glow_combined.blit(glow_layer, (pad + dx, pad + dy))
 
-    # Draw main text
-    rendered = font.render(text, True, color)
-    rect = rendered.get_rect()
+    return glow_combined, pad
+
+
+def draw_text_with_glow(surface, text, font, color, x, y, align="left",
+                         glow_color=None, glow_radius=2):
+    """Draw text with an ethereal purple glow/shadow for readability on obsidian.
+
+    Uses a cache to pre-compute the glow surface once per unique (text, font, color, glow)
+    combination, then blits the cached surface on subsequent calls. This reduces from
+    ~25 font.render() calls per frame to 1 render + 2 blits on cache hit.
+    """
+    if glow_color is None:
+        glow_color = (100, 60, 160)
+
+    cache_key = _make_glow_cache_key(text, font, color, glow_color, glow_radius)
+
+    cached = _glow_text_cache.get(cache_key)
+    if cached is None:
+        # Cache miss — compute glow surface + main text surface
+        glow_surf, pad = _render_glow_surface(text, font, glow_color, glow_radius)
+        main_surf = font.render(text, True, color)
+        tw, th = main_surf.get_size()
+        cached = (glow_surf, main_surf, tw, th, pad)
+        # Evict oldest entries if cache is full (simple approach)
+        if len(_glow_text_cache) >= _GLOW_CACHE_MAX:
+            # Remove ~25% of oldest entries
+            keys_to_remove = list(_glow_text_cache.keys())[:_GLOW_CACHE_MAX // 4]
+            for k in keys_to_remove:
+                del _glow_text_cache[k]
+        _glow_text_cache[cache_key] = cached
+
+    glow_surf, main_surf, tw, th, pad = cached
+
+    # Calculate position based on alignment
     if align == "center":
-        rect.centerx = x
-        rect.top = y
+        glow_x = x - tw // 2 - pad
+        glow_y = y - pad
+        main_x = x - tw // 2
+        main_y = y
     elif align == "right":
-        rect.right = x
-        rect.top = y
+        glow_x = x - tw - pad
+        glow_y = y - pad
+        main_x = x - tw
+        main_y = y
     else:
-        rect.topleft = (x, y)
-    surface.blit(rendered, rect)
-    return rect
+        glow_x = x - pad
+        glow_y = y - pad
+        main_x = x
+        main_y = y
+
+    # Blit glow, then main text on top (2 blits total)
+    surface.blit(glow_surf, (glow_x, glow_y))
+    surface.blit(main_surf, (main_x, main_y))
+
+    return pygame.Rect(main_x, main_y, tw, th)
 
 
 def draw_text_wrapped_glow(surface, text, font, color, x, y, max_width,

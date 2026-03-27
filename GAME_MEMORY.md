@@ -187,7 +187,7 @@ game/
 
 ## Known Issues / Future Work
 - Some buff types still unimplemented (bladeAura, copyAttack, skipCombat, etc.) — low priority, not used by any current skill
-- `draw_text_with_glow()` renders text 9× per call — #1 performance bottleneck, should cache
+- ~~`draw_text_with_glow()` renders text 9× per call~~ → FIXED: now uses glow surface cache (2 blits on cache hit vs 25 renders). Cache: `_glow_text_cache` dict, 4096 entry limit, evicts 25% on overflow. Keyed by (text, font_id, color, glow_color, glow_radius).
 - `pygame_game.py` at 3,200 lines — screens could be split into modules
 - Parchment texture cache by (w,h) tuple — could use atlas or tile approach
 - No automated tests
