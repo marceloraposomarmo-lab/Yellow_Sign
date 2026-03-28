@@ -418,3 +418,9 @@ Replaces the instant screen switch on combat win with a satisfying animation seq
 - `engine/__init__.py` re-exports from all files — no screen imports changed
 - `engine/world.py` updated to import `generate_item` from `engine.items`
 - `tests/test_combat.py` updated: split imports across 3 modules
+
+### Code Deduplication (Session 15 — 2026-03-29)
+- `_base_damage(state, skill)` extracted to engine/combat.py — shared base damage calculation used by both `calc_player_damage` (variance path) and `calc_preview_damage` (deterministic path)
+- `has_status()` and `apply_status()` moved to engine/models.py — single definition, imported by combat.py and skills.py. Eliminates circular dep workaround and 3x duplication.
+- combat.py reduced from 692 → 614 lines
+- Net -77 lines across codebase

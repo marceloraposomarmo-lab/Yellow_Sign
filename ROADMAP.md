@@ -346,3 +346,21 @@ Last updated: 2026-03-28 09:26
 - Added `has_status` and `apply_status` utility functions to `engine/skills.py` (duplicated from combat.py to avoid circular dep — both are 1-5 lines)
 - All 271 combat tests pass
 - Commit: `18c9816`
+
+### ✅ Step 43: Deduplicate damage calc + move status utilities (Session 15 — 2026-03-29)
+- **Fix 1**: Extracted `_base_damage(state, skill)` helper from `calc_player_damage` + `calc_preview_damage`
+  - ~50 lines of identical base damage logic consolidated (skill type dispatch, 8 buff multipliers, scaling, multihit, execute, luck_bonus)
+  - `calc_player_damage` now: calls `_base_damage()` → applies random variance, gamble, coin_flip → returns int. Reduced from 81 → 28 lines.
+  - `calc_preview_damage` now: calls `_base_damage()` → applies enemy defense reduction → returns (base, final). Reduced from 87 → 30 lines.
+  - `combat.py`: 692 → 614 lines (11% reduction)
+- **Fix 2**: Moved `has_status()` + `apply_status()` to `engine/models.py`
+  - Was duplicated 3 times: combat.py had 2 copies (one shadowed the other), skills.py had a 3rd copy to dodge circular imports
+  - Now defined once in `engine/models.py` right after `StatusEffect` class (7 lines added)
+  - `engine/combat.py`: removed all 3 copies, imports from models
+  - `engine/skills.py`: removed duplicate, imports from models
+  - `engine/__init__.py`: re-exports from models instead of combat
+  - `tests/test_combat.py`: updated import source
+  - Net -77 lines across codebase
+- All 271 combat tests pass
+- Commit: `b9e885c`
+
