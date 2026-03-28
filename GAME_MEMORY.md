@@ -221,6 +221,15 @@ game/
 - **Root cause**: `process_status_effects()` had no handler for `doom` — it just logged "doom wears off"
 - **Fix**: Added doom-specific logic in the `to_remove` loop. When doom expires on enemy and HP < 30%: instant kill with dramatic log message. Otherwise: "The Pallid Mask fades..." flavor text.
 
+### 4 Unimplemented Buff Types (Fixed — Step 30)
+- **Symptom**: Skills referencing `eldritchRebirth`, `astral`, `statSwap`, `dreadnought` had no actual effect
+- **Fix**: Added handler functions + messages + combat logic for each:
+  - `eldritchRebirth`: `apply_damage_to_player()` checks buff before death → revives at 30% HP, consumes buff
+  - `astral`: Added to `_get_buff_evasion_bonus()` (+40 EVA) and `_get_buff_defense_bonus()` (+60% mDEF)
+  - `statSwap`: `apply_damage_to_player()` swaps which defense stat is used when buff active
+  - `dreadnought`: `apply_damage_to_player()` adds 50% of damage taken as temp STR bonus; cleaned up on expire via STAT_BUFF_KEYS
+  - Added `{d}` (duration) to message format dict for all new buff messages
+
 ## Class Select Overhaul Details (Step 10)
 - Redesigned from all-5-at-once to one-class-per-page
 - Layout: 400×400 sprite (left), info panel (right)

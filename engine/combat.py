@@ -250,6 +250,7 @@ def _get_buff_defense_bonus(state, is_phys):
         if b.get("fortress", 0) > 0:       pct += 80
         if b.get("bulwark", 0) > 0:        pct += 60
         if b.get("dreamShell", 0) > 0:     pct += 80
+        if b.get("astral", 0) > 0:         pct += 60
     return pct
 
 
@@ -262,6 +263,7 @@ def _get_buff_evasion_bonus(state):
     if b.get("evasionUp", 0) > 0:     bonus += 40
     if b.get("dreamShell", 0) > 0:    bonus += 50
     if b.get("umbralAegis", 0) > 0:   bonus += 60
+    if b.get("astral", 0) > 0:        bonus += 40
     return bonus
 
 
@@ -299,8 +301,11 @@ def apply_damage_to_player(state, raw, is_phys):
     if random.random() * 100 < eva:
         return 0, "evade"
 
-    # DEF/mDEF with buff bonuses
-    base_df = state.defense if is_phys else state.m_def
+    # DEF/mDEF with buff bonuses (statSwap swaps which defense is used)
+    if state.buffs.get("statSwap", 0) > 0:
+        base_df = state.m_def if is_phys else state.defense
+    else:
+        base_df = state.defense if is_phys else state.m_def
     bonus_pct = _get_buff_defense_bonus(state, is_phys)
     df = base_df * (1 + bonus_pct / 100)
     dr = df / (df + 50)
@@ -319,6 +324,12 @@ def apply_damage_to_player(state, raw, is_phys):
         state.hp = 1
         return dmg, "undying"
 
+    # Eldritch Rebirth: auto-revive at 30% HP once
+    if state.buffs.get("eldritchRebirth", 0) > 0 and dmg >= state.hp:
+        state.hp = max(1, int(state.max_hp * 0.30))
+        del state.buffs["eldritchRebirth"]
+        return dmg, "undying"
+
     # Final Stand: invulnerable
     if state.buffs.get("finalStand", 0) > 0:
         return 0, "barrier"
@@ -335,6 +346,12 @@ def apply_damage_to_player(state, raw, is_phys):
     if state.buffs.get("retribAura", 0) > 0 and state.combat:
         reflected = int(dmg * 0.30)
         state.combat.enemy.hp = max(0, state.combat.enemy.hp - reflected)
+
+    # Dreadnought: convert damage taken into ATK bonus
+    if state.buffs.get("dreadnought", 0) > 0:
+        atk_bonus = int(dmg * 0.5)
+        state.temp_stats["str"] = state.temp_stats.get("str", 0) + atk_bonus
+        state.recalc_stats()
 
     return dmg, "hit"
 
@@ -427,6 +444,7 @@ def tick_player_buffs(state):
         "shadowBless": ["agi", "luck"],
         "randStat2": ["int", "str", "agi", "wis", "luck"],  # cleared fully on expire
         "pallidMask": ["int", "str", "agi", "wis", "luck"],
+        "dreadnought": ["str"],
     }
 
     for key in to_remove:
@@ -744,6 +762,18 @@ def _buff_abyssFort(state, skill):
     state.buffs["ironSkin"] = skill.buff_duration
     state.barrier = min(3, state.barrier + 1)
 
+def _buff_eldritchRebirth(state, skill):
+    state.buffs["eldritchRebirth"] = skill.buff_duration
+
+def _buff_astral(state, skill):
+    state.buffs["astral"] = skill.buff_duration
+
+def _buff_statSwap(state, skill):
+    state.buffs["statSwap"] = skill.buff_duration
+
+def _buff_dreadnought(state, skill):
+    state.buffs["dreadnought"] = skill.buff_duration
+
 # Static messages per buff_type (most don't need dynamic formatting)
 _BUFF_MESSAGES = {
     "barrier":       "Barrier! ({v} stacks)",
@@ -769,6 +799,10 @@ _BUFF_MESSAGES = {
     "perseverance":  "Perseverance! WIS+4, STR+3 for 5 turns!",
     "shadowBless":   "Shadow's Blessing! AGI+4, LUCK+3 for 5 turns!",
     "abyssFort":     "Abyssal Fortitude! pDEF+50%, +1 barrier!",
+    "eldritchRebirth": "Eldritch Rebirth! Auto-revive at 30% HP if killed! ({d} turns)",
+    "astral":        "Astral Projection! EVA+40%, mDEF+60% for {d} turns!",
+    "statSwap":      "Mind Over Matter! pDEF and mDEF swapped for {d} turns!",
+    "dreadnought":   "Dreadnought! Damage taken converts to ATK for {d} turns!",
 }
 
 BUFF_HANDLERS = {
@@ -795,6 +829,10 @@ BUFF_HANDLERS = {
     "perseverance":  _buff_perseverance,
     "shadowBless":   _buff_shadowBless,
     "abyssFort":     _buff_abyssFort,
+    "eldritchRebirth": _buff_eldritchRebirth,
+    "astral":        _buff_astral,
+    "statSwap":      _buff_statSwap,
+    "dreadnought":   _buff_dreadnought,
 }
 
 
@@ -817,6 +855,7 @@ def _handle_self_buff(state, skill):
     # Format dynamic parts
     fmt = dict(extra)
     fmt["v"] = state.barrier  # for barrier type
+    fmt["d"] = skill.buff_duration  # for duration in messages
     if "stats" in fmt and isinstance(fmt["stats"], list):
         fmt["stats"] = ", ".join(s.upper() + ("+3" if buff_type == "randStat2" else "-3") for s in fmt["stats"])
     try:
