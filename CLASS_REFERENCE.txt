@@ -1,0 +1,237 @@
+═══════════════════════════════════════════════════════════════════
+  THE KING IN YELLOW — Class & Debuff Reference
+  A Lovecraftian Dungeon Crawler RPG
+═══════════════════════════════════════════════════════════════════
+
+
+━━━ ALL DEBUFFS (Status Effects) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ 1. BURNING         [DoT]              6% of target's max HP as fire damage per turn.
+
+ 2. POISONED        [DoT — Stacking]   4% of target's max HP per stack per turn.
+                                        Stacks up to 5× (max 20%/turn).
+
+ 3. BLEEDING        [DoT]              5% of target's max HP as bleed damage per turn.
+
+ 4. BLINDED         [Accuracy]         50% chance to miss attacks each turn.
+
+ 5. SHOCKED         [Stun]             50% chance to be stunned (skip turn) each turn.
+
+ 6. FREEZING        [Damage debuff]    Enemy physical attacks deal reduced damage.
+
+ 7. PETRIFIED       [Damage debuff]    Enemy magic attacks deal reduced damage.
+
+ 8. WEAKENED        [Defense debuff]   Target's DEF reduced by 20% (both pDEF & mDEF).
+
+ 9. DOOM            [Delayed execute]  After duration expires: instant kill if below 30% HP.
+
+10. WANING          [Stat drain]       −2 to a random stat each turn for duration.
+
+11. DEATH MARK      [Crit vulnerability]  All hits against the marked target are guaranteed crits.
+
+12. HASTUR'S MARK   [Debuff amplifier] All debuffs deal 50% more damage for duration.
+
+13. JUDGMENT MARK   [Vulnerability]    Target takes 20% more damage from all sources.
+
+
+━━━ CLASS SUMMARIES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ SCHOLAR OF THE FORBIDDEN                                        │
+│ Primary stat: INT (14)  │  HP: 70 + 6/level  │  41 skills      │
+├─────────────────────────────────────────────────────────────────┤
+│ Theme: Eldritch knowledge wielder. Devastating magical bursts  │
+│ and crippling status effects. Fragile but deadly.              │
+│                                                                │
+│ Playstyle: Pure mage. Highest INT base in the game. Scales    │
+│ with madness. Access to every debuff type. Glass cannon —     │
+│ lowest HP pool but most dangerous when left unchecked.         │
+│                                                                │
+│ Key abilities:                                                  │
+│  • Eldritch Blast (T1) — bread-and-butter magic damage        │
+│  • Void Bolt / Void Rift (T2-T3) — dual-stat (INT+WIS) nukes │
+│  • Mental Collapse / Thought Spiral — damage scales with MAD  │
+│  • Entropy Wave / Gaze of the Cosmos — armor-piercing magic   │
+│  • The Yellow Sign (T3 ultimate) — massive damage + burn+     │
+│    petrify, dual-stat scaling                                  │
+│                                                                │
+│ Debuff arsenal (12 skills):                                     │
+│  • Weakened (Mind Spike, Yellow Sign Curse)                    │
+│  • Burning (Burning Sigil, The Yellow Sign)                    │
+│  • Petrified (Mind Shatter, The Yellow Sign)                   │
+│  • Poisoned (Corrosive Hex — stacking)                         │
+│  • Freezing (Flash Freeze)                                     │
+│  • Shocked (Aura of Madness, Dominate Mind)                    │
+│  • Blinded (Nether Storm, Reality Warp)                        │
+│  • Doom (Curse of the Pallid Mask — execute below 30%)        │
+│                                                                │
+│ Defensive tools: Psychic Shield, Warding Glyph, Thoughtform   │
+│ Armor, Dream Shell (EVA+mDEF), Eldritch Rebirth (revive)      │
+└─────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ BRUTE OF THE DEPTHS                                             │
+│ Primary stat: STR (14)  │  HP: 110 + 10/level  │  40 skills    │
+├─────────────────────────────────────────────────────────────────┤
+│ Theme: Unstoppable force of raw power. High health, devastating│
+│ physical attacks that grow stronger as you weaken.             │
+│                                                                │
+│ Playstyle: Berserker tank. Highest HP in the game. Excels at  │
+│ scaling damage with missing HP. Lifesteal and self-healing     │
+│ keep you alive while raging. Straightforward but powerful.     │
+│                                                                │
+│ Key abilities:                                                  │
+│  • Crushing Blow (T1) — reliable physical damage              │
+│  • Last Stand / Blood Frenzy — scale with missing HP          │
+│  • Rampage (T3) — 3-hit multihit                              │
+│  • Seismic Wave (T3) — dual-stat (STR+AGI) physical nuke     │
+│  • Blood Price — sacrifice 25% HP for devastating damage      │
+│  • Apocalypse Strike (T3 ultimate) — STR+AGI triple hit       │
+│                                                                │
+│ Debuff arsenal (8 skills):                                      │
+│  • Weakened (Intimidate, Terrifying Presence, Colossus Smash) │
+│  • Shocked (Thunderclap, Ground Pound, Titan Slam)            │
+│  • Poisoned (Blood Curse of Yuggoth — 5 stacks + DoT amp)    │
+│                                                                │
+│ Defensive tools: Iron Skin, Adrenaline Surge (missing HP heal)│
+│ Vampiric Strike (40% lifesteal), Undying Fury (can't die 1t) │
+│ Dreadnought (damage taken → ATK), Titanic Resilience          │
+└─────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ WARDEN OF THRESHOLDS                                            │
+│ Primary stat: WIS (14)  │  HP: 90 + 8/level  │  40 skills     │
+├─────────────────────────────────────────────────────────────────┤
+│ Theme: Master of shields and barriers. Absorb punishment,      │
+│ curse foes, and turn defense into devastating offense.         │
+│                                                                │
+│ Playstyle: Paladin / holy tank. Best shields and heals in the │
+│ game. Can convert shields into damage (Retribution, Sacrifice │
+│ Curse). Barrier stacks absorb hits. Sustained and methodical.  │
+│                                                                │
+│ Key abilities:                                                  │
+│  • Holy Strike / Smite the Unworthy (T1) — WIS-based magic   │
+│  • Shield Bash — scales with DEF stat                         │
+│  • Retribution / Sacrificial Curse — consume shields for dmg  │
+│  • Banishment (T3) — high damage + shocked                    │
+│  • Seal of Carcosa (T3 ultimate) — full heal + massive shield │
+│    + barrier + damage, all in one                              │
+│                                                                │
+│ Debuff arsenal (7 skills):                                      │
+│  • Weakened (Curse of Frailty, Voice of Command)              │
+│  • Freezing (Pillar of Radiance)                              │
+│  • Shocked (Hex of Silence — 1t stun, Banishment)             │
+│  • Judgment Mark (+20% damage taken)                          │
+│  • Waning (−2 random stat/turn)                               │
+│                                                                │
+│ Defensive tools: Aegis Shield, Sanctuary (WIS×4 shield),      │
+│ Divine Fortress (80% DEF + barriers), Divine Intervention      │
+│ (nullify 2 attacks), Bulwark, Lay on Hands (cleanse all)      │
+└─────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ SHADOWBLADE OF CARCOSA                                          │
+│ Primary stat: AGI (14)  │  HP: 75 + 7/level  │  40 skills     │
+├─────────────────────────────────────────────────────────────────┤
+│ Theme: Swift and deadly. Critical strikes, evasion, and poison.│
+│ Glass cannon that dances on the edge of death.                 │
+│                                                                │
+│ Playstyle: Rogue / assassin. Highest evasion and crit. Poison  │
+│ stacking is the signature mechanic (up to 20% HP/turn). Can   │
+│ guarantee crits, ignore all defense, and execute weakened foes.│
+│                                                                │
+│ Key abilities:                                                  │
+│  • Shadow Strike / Backstab (T1) — physical + crit bonus      │
+│  • Blade Dance — 4-hit multihit                               │
+│  • Shuriken Storm — 5-hit + LUCK scaling                      │
+│  • Assassinate (T2) — execute bonus on low HP enemies         │
+│  • Shadow Step — guaranteed crit                               │
+│  • Phantom Blades (T3) — 4 hits, ignores 100% DEF            │
+│  • Death's Embrace (T3 ultimate) — massive damage + bleed +   │
+│    poison, dual stat (AGI+STR)                                 │
+│                                                                │
+│ Debuff arsenal (9 skills):                                      │
+│  • Poisoned (Venom Blade, Poison Cloud, Toxic Blade — stacking)│
+│  • Bleeding (Wound, Death's Embrace)                          │
+│  • Shocked (Garrote, Nightmare)                               │
+│  • Weakened (Curse of Vulnerability)                          │
+│  • Blinded (Nightmare)                                        │
+│  • Death Mark (all hits crit vs target)                       │
+│                                                                │
+│ Defensive tools: Smoke Screen, Flicker (dodge stacks),        │
+│ Evasion, Shadow Meld (invis 1t + next hit +100%),            │
+│ Ethereal Jaunt (invuln 1t + next hit +150%), Mirror Images    │
+└─────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ MAD PROPHET OF HASTUR                                           │
+│ Primary stat: WIS (12), LUCK (9) │  HP: 80 + 7/level │ 40 sk  │
+├─────────────────────────────────────────────────────────────────┤
+│ Theme: Blessed and cursed by visions. Powerful debuffs,        │
+│ madness manipulation, and chaos. High risk, high reward.       │
+│                                                                │
+│ Playstyle: Chaos mage / gambler. Madness is both resource and │
+│ danger. Coin flips, random effects, and gambling damage. Most  │
+│ debuffs of any class. Madness can't kill you with the right    │
+│ skill. Unpredictable but devastating when lucky.               │
+│                                                                │
+│ Key abilities:                                                  │
+│  • Channel Madness (T1) — damage scales with MAD level        │
+│  • Coin of Chaos — 50%: double damage OR heal enemy           │
+│  • Unstable Bolt / Gamble of Fate — random 0.3×–3.0× damage  │
+│  • Hastur's Whim / Commune with Hastur — random powerful FX   │
+│  • Apocalyptic Dream (T3) — WIS+INT massive nuke              │
+│  • Hastur's Decree (T3 ultimate) — damage + burn+petrify+     │
+│    blind, triple debuff                                        │
+│                                                                │
+│ Debuff arsenal (12 skills — most of any class):                │
+│  • Shocked (Madness Touch, Terrifying Visage, Scream of Az.) │
+│  • Weakened (Scream of Madness, Dark Prophecy, Terrifying V.) │
+│  • Petrified (Visions of Carcosa, Hastur's Decree)            │
+│  • Blinded (Yellow Haze, Terrifying Visage, King's Gaze,      │
+│    Hastur's Decree, Scream of Azathoth)                        │
+│  • Poisoned (Yellow Haze)                                     │
+│  • Burning (Madness Nova, Hastur's Decree, Scream of Azathoth)│
+│  • Doom (Prophecy of Doom — execute below 30%)                │
+│  • Hastur's Mark (all debuffs +50% damage)                    │
+│                                                                │
+│ Defensive tools: Madness Shell (shield from MAD), The Fool's  │
+│ Luck (nullify 3 attacks), Reality Anchor (can't die 2t),      │
+│ Hastur's Embrace (full heal + debuff immunity),               │
+│ Madness Mastery (MAD can no longer kill you)                   │
+└─────────────────────────────────────────────────────────────────┘
+
+
+━━━ DEBUFF DISTRIBUTION BY CLASS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+               SCH  BRU  WDR  SHD  MPR
+  Burning      ·                ·    ···
+  Poisoned     ·    ·                ···
+  Bleeding                 ···
+  Blinded      ··              ··   ·····
+  Shocked      ··   ···  ·    ··   ···
+  Freezing     ·         ·
+  Petrified    ··              ·    ··
+  Weakened     ···  ···  ···  ·    ···
+  Doom         ·                  ·
+  Waning                 ·
+  Death Mark                ···
+  Hastur's Mark                  ···
+  Judgment Mark             ·
+
+  SCH = Scholar  BRU = Brute  WDR = Warden  SHD = Shadowblade  MPR = Mad Prophet
+
+
+━━━ QUICK CLASS PICK GUIDE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Want BIG DAMAGE?        → Scholar (INT nukes) or Brute (STR scaling)
+  Want to NEVER DIE?      → Warden (shields, heals, barriers)
+  Want CRITS & SPEED?     → Shadowblade (AGI, evasion, poison stacking)
+  Want CHAOS & DEBUFFS?   → Mad Prophet (gambling, madness, every debuff)
+  Want EASY/STRAIGHTFORWARD? → Brute (high HP, simple rotation)
+  Want HIGH SKILL CEILING?   → Scholar or Mad Prophet (glass cannon play)
