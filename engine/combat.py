@@ -9,8 +9,14 @@ from engine.models import Item, StatusEffect, Enemy, CombatState
 # ITEM GENERATION
 # ═══════════════════════════════════════════
 
-def determine_rarity(floor, luck):
+def determine_rarity(floor, luck, buffs=None):
     r = random.random() * 100 + (luck - 5) * 1.5 + floor * 0.8
+    # Loot quality buffs increase rarity chances
+    if buffs:
+        if buffs.get("nimbleFingers", 0) > 0:
+            r += 20  # +20% effective rarity roll
+        elif buffs.get("looterInst", 0) > 0:
+            r += 10  # +10% effective rarity roll
     if r >= 96:
         return 4
     elif r >= 80:
@@ -20,9 +26,9 @@ def determine_rarity(floor, luck):
     return 1
 
 
-def generate_item(floor, item_type=None, luck=5):
+def generate_item(floor, item_type=None, luck=5, buffs=None):
     """Generate a random item."""
-    rarity = determine_rarity(floor, luck)
+    rarity = determine_rarity(floor, luck, buffs)
     rd = RARITY_DATA[rarity]
     fs = 1 + (floor - 1) * 0.06
 

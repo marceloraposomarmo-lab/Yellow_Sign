@@ -90,7 +90,7 @@ def resolve_event(state, event_idx, outcome_idx):
         state.gold += 15
     elif effect == "help_survivor":
         state.add_madness(10)
-        loot = generate_item(state.floor, luck=state.luck)
+        loot = generate_item(state.floor, luck=state.luck, buffs=state.buffs)
         msg = f"Survivor gives you: {loot.name}"
     elif effect == "rob_survivor":
         state.gold += 20
@@ -155,7 +155,7 @@ def resolve_trap(state, trap_idx):
 
 def generate_shop(state):
     """Generate shop items and prices."""
-    items = [generate_item(state.floor, luck=state.luck) for _ in range(4)]
+    items = [generate_item(state.floor, luck=state.luck, buffs=state.buffs) for _ in range(4)]
     prices = [10 + (item.rarity or 1) * 8 + random.randint(0, 10) for item in items]
     return items, prices
 

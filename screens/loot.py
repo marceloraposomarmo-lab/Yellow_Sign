@@ -16,7 +16,7 @@ class LootScreen(Screen):
     def enter(self):
         s = self.game.state
         count = 1 + (1 if random.random() < 0.3 else 0)
-        self.items = [generate_item(s.floor, luck=s.luck) for _ in range(count)]
+        self.items = [generate_item(s.floor, luck=s.luck, buffs=s.buffs) for _ in range(count)]
         self.gold_found = 5 + random.randint(0, 10) + s.floor * 2
         s.gold += self.gold_found
         cx = SCREEN_W // 2

@@ -272,7 +272,7 @@ class CombatScreen(Screen):
             s.xp += xp_g
             s.gold += gold_g
             s.add_madness(-15 if c.is_boss else 3)
-            loot = generate_item(s.floor, luck=s.luck)
+            loot = generate_item(s.floor, luck=s.luck, buffs=s.buffs)
             leveled = s.check_level_up()
 
             self.game.combat_result = {
@@ -372,11 +372,6 @@ class CombatScreen(Screen):
 
         draw_hud(surface, s, self.assets)
 
-        # Player status icons (for hover tooltips — drawn on top of HUD)
-        self._player_status_rects = draw_status_icons_row(
-            surface, 480, 90, s.statuses, s.buffs, barrier=s.barrier, size=20, gap=4
-        )
-
         # Particles (behind UI elements)
         for p in self.particles:
             ps = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
@@ -386,7 +381,7 @@ class CombatScreen(Screen):
         # --- Enemy info panel (compact nameplate above sprite) ---
         e_hp_pct = max(0, e.hp / e.max_hp * 100)
         panel_w = 495
-        panel_h = 75
+        panel_h = 100  # Taller to fit status icons below HP bar
         sprite_w = 240
         sprite_x = SCREEN_W - sprite_w - 40 + ox
         sprite_y = 202 + oy
@@ -405,16 +400,15 @@ class CombatScreen(Screen):
         draw_text_with_glow(surface, f"{e.hp}/{e.max_hp}", self.assets.fonts["tiny"],
                   C.INK, panel_x + 350, panel_y + 44)
 
-        # Enemy status icons (replaces text statuses)
+        # Enemy status icons — below HP bar, left side
         enemy_statuses = list(e.statuses)
         if e.stunned:
-            # Add stun as a virtual status for icon display
             from engine.models import StatusEffect
             stun_se = StatusEffect("stunned", 1)
             enemy_statuses = [stun_se] + enemy_statuses
         self._enemy_status_rects = draw_status_icons_row(
-            surface, panel_x + 12, panel_y + 58, enemy_statuses, {},
-            size=20, gap=4
+            surface, panel_x + 12, panel_y + 65, enemy_statuses, {},
+            size=26, gap=5
         )
 
         # --- Enemy sprite (right side, below panel, fully visible) ---
@@ -461,6 +455,33 @@ class CombatScreen(Screen):
         if 0 <= self.hover_idx < len(s.active_skills):
             sk = s.active_skills[self.hover_idx]
             self._draw_skill_tooltip(surface, sk, self.skill_buttons[self.hover_idx])
+
+        # Player status icons — vertical column to the right of skills
+        icon_x = 620
+        icon_y = 460
+        icon_size = 28
+        icon_gap = 6
+        self._player_status_rects = []
+        # Debuffs first, then buffs
+        all_player_effects = []
+        for st in s.statuses:
+            all_player_effects.append((st.type, st.duration))
+        for bt, dur in sorted(s.buffs.items()):
+            if dur <= 0 or bt in ("darkRegenBuff",):
+                continue
+            all_player_effects.append((bt, dur))
+        if s.barrier > 0:
+            all_player_effects.append(("barrier", s.barrier))
+        # Draw in vertical column, wrapping to second column if needed
+        col_max = 5  # icons per column before wrapping
+        for idx, (etype, dur) in enumerate(all_player_effects):
+            col = idx // col_max
+            row = idx % col_max
+            cx = icon_x + col * (icon_size + icon_gap)
+            cy = icon_y + row * (icon_size + icon_gap)
+            from shared.rendering import draw_status_icon
+            rect = draw_status_icon(surface, cx, cy, etype, dur, icon_size)
+            self._player_status_rects.append((rect, etype))
 
         # Command buttons
         can_run = not c.is_boss

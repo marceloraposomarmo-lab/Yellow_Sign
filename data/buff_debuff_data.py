@@ -621,6 +621,22 @@ EFFECT_REGISTRY = {
         "category": "buff",
         "color": (220, 200, 60),
     },
+    "nimbleFingers": {
+        "symbol": "🔑",
+        "letter": "NF",
+        "name": "Nimble Fingers",
+        "desc": "+20% improved loot quality. Higher chance of rare and cursed items.",
+        "category": "buff",
+        "color": (200, 180, 60),
+    },
+    "looterInst": {
+        "symbol": "🔑",
+        "letter": "LI",
+        "name": "Looter's Instinct",
+        "desc": "+10% improved loot quality. Higher chance of rare and cursed items.",
+        "category": "buff",
+        "color": (180, 160, 50),
+    },
 
     # Stun (shown as status on enemy)
     "stunned": {
