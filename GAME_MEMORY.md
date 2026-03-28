@@ -342,3 +342,41 @@ game/
 - Right panel: class name → description → stats → starting abilities (lv1) → future abilities (top 3 by power) → Choose button
 - Hover tooltip: damage formula shown in popup above the ability button
 - Navigation: Left/Right arrow keys, page indicator "1/5"
+
+## Victory Animation (Step 40 — Session 14, 2026-03-28)
+### 3-Phase End-of-Combat Animation
+Replaces the instant screen switch on combat win with a satisfying animation sequence.
+
+**Phase 1 — HP Drain** (~1s):
+- Enemy HP bar rapidly drains to 0 with accelerating speed
+- Red pulsing tint on enemy sprite (sin wave, alpha 40-80)
+- Screen shake on trigger (intensity=12, 0.5s)
+- Damage numbers fly off randomly (yellow/crimson/bone, ~0.15/frame chance)
+
+**Phase 2 — Disintegration** (~2s):
+- Enemy sprite split into 8×6px fragments (vertical strips × horizontal chunks)
+- Each fragment: outward velocity from center, upward bias, gravity, random rotation
+- Fragments fade over 1.2s, fall under gravity (80-150 px/s²)
+- Eldritch energy burst from center: 60 particles (gold/purple/amber, size 2-6)
+- Sharp burst: 30 white spark particles (fast, short-lived 0.3-0.8s)
+- Ongoing wisps during disintegration (gold/purple, 0.2/frame chance)
+
+**Phase 3 — Dramatic Pause** (~1.5s):
+- "D E F E A T E D" fades in (heading font, gold parchment color, alpha = timer×500)
+- Growing gold underline divider (width = timer×300, max 300px)
+- Combat log panel replaced with victory narrative (different for boss vs regular)
+- Boss: "The Spiral collapses. Hastur screams as reality reasserts itself."
+- Regular: "The creature dissolves into shadow. The air grows still."
+- Fading ghost of enemy sprite (alpha 60, fades over 0.5s)
+- Final golden particles drift upward
+- Auto-transition to combat_result/levelup via `_finish_victory()`
+
+**Implementation Details**:
+- State machine: `self._victory_state` (None → "hp_drain" → "disintegrate" → "dramatic_pause" → None)
+- Input fully blocked during all phases (`handle_event` returns early)
+- UI hidden: skills, commands, status icons all hidden when `_victory_state` is set
+- `_finish_victory()` guarded against double-call (sets `_victory_state = None` first)
+- `s.combat` preserved until `_finish_victory()` so draw can read enemy data
+- Fragments use sprite pixel sampling with alpha < 20 skip (transparent pixels)
+- `import math` added for `math.cos`/`math.sin` in particle burst
+

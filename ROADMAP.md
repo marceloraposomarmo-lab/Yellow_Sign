@@ -301,10 +301,17 @@ Last updated: 2026-03-28 09:26
 
 ## Pending Steps
 
-### ⬜ Step 40: Victory Animation (Deferred)
-- When winning a fight, instead of immediately going to item/gains screen:
-  - Show enemy HP going to zero
-  - Enemy fading/disappearing animation
-  - Brief pause before transitioning to combat result
-- **Status**: Noted for future implementation
+### ✅ Step 40: Victory Animation (Session 14 — 2026-03-28)
+- **3-phase victory sequence** replaces the instant screen switch on combat win
+- **Phase 1 "hp_drain"** (~1s): Enemy HP bar rapidly drains to 0 with accelerating speed. Red pulsing tint on enemy sprite. Damage numbers fly off randomly. Screen shake on trigger. ~0.15 chance per frame to spawn floating damage numbers (yellow/crimson/bone colors).
+- **Phase 2 "disintegrate"** (~2s): Enemy sprite split into 8×6px fragments (vertical strips × horizontal chunks). Each fragment gets outward velocity from center, upward bias, gravity, rotation. Fragments fade out over 1.2s. Eldritch energy burst from center (60 gold/purple/amber particles). Eldritch wisps spawn during disintegration.
+- **Phase 3 "dramatic_pause"** (~1.5s): "D E F E A T E D" text fades in (heading font, gold parchment color). Growing gold underline divider. Combat log panel replaced with victory narrative text (different for boss vs regular). Fading ghost of enemy sprite (0.5s). Final golden particles drift upward. Auto-transition to combat_result/levelup screen.
+- **Input fully blocked** during all 3 phases (no clicks, no keyboard)
+- **UI hidden**: Skills panel, command buttons, player status icons, enemy status icons all hidden during animation
+- **Combat log preserved** but hidden during hp_drain/disintegrate; replaced with victory text during pause
+- **Safety**: `_finish_victory()` guarded against double-call via `self._victory_state = None` check
+- Files changed: `screens/combat.py` (only)
+  - Added: `__init__` (victory state vars), `_start_victory_animation()`, `_build_disintegration_fragments()`, `_spawn_victory_particle_burst()`, `_finish_victory()`
+  - Modified: `enter()`, `update()`, `handle_event()`, `draw()`, `_end_combat()`
+  - Added `import math`
 
