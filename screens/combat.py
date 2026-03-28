@@ -5,7 +5,7 @@ from screens.base import Screen
 from engine import (player_use_skill, enemy_turn, check_boss_phase,
                     tick_player_buffs, process_status_effects,
                     process_player_status_effects, generate_item, advance_floor,
-                    combat_run_attempt)
+                    combat_run_attempt, _get_enemy_intent_message)
 
 class CombatScreen(Screen):
     def __init__(self, game):
@@ -29,6 +29,12 @@ class CombatScreen(Screen):
         # Ambient eldritch particles
         for _ in range(25):
             self.particles.append(self._new_ambient_particle())
+        # Pre-select enemy's first action and show intent
+        s = self.game.state
+        if s.combat:
+            s.combat.next_enemy_skill = random.choice(s.combat.enemy.skills)
+            intent_msg = _get_enemy_intent_message(s.combat.next_enemy_skill)
+            s.combat.add_log(intent_msg, "info")
 
     def _new_ambient_particle(self):
         return {
@@ -225,6 +231,12 @@ class CombatScreen(Screen):
 
         c.turn = "player"
         c.turn_count += 1
+
+        # Pre-select enemy's next action and show intent
+        c.next_enemy_skill = random.choice(c.enemy.skills)
+        intent_msg = _get_enemy_intent_message(c.next_enemy_skill)
+        c.add_log(intent_msg, "info")
+
         self._build_buttons()
 
     def _try_run(self):

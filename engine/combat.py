@@ -987,6 +987,23 @@ def player_use_skill(state, skill_index):
     return logs
 
 
+def _get_enemy_intent_message(skill):
+    """Generate a descriptive intent message for the enemy's next action."""
+    stype = skill.get("type", "physical")
+    sname = skill.get("name", "attack")
+
+    if stype == "self_heal":
+        return f"{sname} — the enemy channels restorative energy!"
+    elif "debuff" in stype:
+        return f"{sname} — the enemy prepares a dark technique!"
+    elif stype == "magic":
+        return f"{sname} — eldritch energy crackles in the air!"
+    elif stype == "physical":
+        return f"{sname} — the enemy braces for a strike!"
+    else:
+        return f"{sname} — the enemy readies itself!"
+
+
 def enemy_turn(state):
     """Execute enemy turn. Returns list of (text, type) log messages."""
     logs = []
@@ -1010,7 +1027,12 @@ def enemy_turn(state):
         logs.append((f"{e.name} misses!", "info"))
         return logs
 
-    skill = random.choice(e.skills)
+    # Use pre-selected skill if available, otherwise pick randomly
+    if c.next_enemy_skill:
+        skill = c.next_enemy_skill
+        c.next_enemy_skill = None
+    else:
+        skill = random.choice(e.skills)
     stype = skill.get("type", "physical")
     spower = skill.get("power", 1.0)
 

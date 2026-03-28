@@ -247,6 +247,21 @@ game/
   - Miss chance is low enough to not feel punishing but gives AGI a real combat value
 - All 271 combat tests pass
 
+### Enemy Intent Indicator (Step 33, Session 14)
+- **Feature**: Before each player turn, the combat log now shows what the enemy will do next
+- **Implementation**:
+  - Added `next_enemy_skill` field to `CombatState` — stores pre-selected enemy action
+  - Added `_get_enemy_intent_message(skill)` — generates flavor text based on skill type:
+    - Physical: "the enemy braces for a strike!"
+    - Magic: "eldritch energy crackles in the air!"
+    - Debuff: "the enemy prepares a dark technique!"
+    - Self-heal: "the enemy channels restorative energy!"
+  - Pre-selection happens at end of enemy turn (before player gets control)
+  - Also pre-selects at combat start (first intent shown immediately)
+  - `enemy_turn()` uses pre-selected skill if available, falls back to random
+- **UX**: Players can now plan defensively — see "the enemy prepares a dark technique!" and choose to heal/shield instead of attacking
+- All 271 combat tests pass
+
 ## Class Select Overhaul Details (Step 10)
 - Redesigned from all-5-at-once to one-class-per-page
 - Layout: 400×400 sprite (left), info panel (right)
