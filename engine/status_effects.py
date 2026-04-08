@@ -178,6 +178,8 @@ def tick_player_buffs(state: GameState) -> List[Tuple[str, str]]:
         "randStat2": ["int", "str", "agi", "wis", "luck"],
         "pallidMask": ["int", "str", "agi", "wis", "luck"],
         "dreadnought": ["str"],
+        "innerFire": ["wis", "luck"],
+        "luckyDodge": ["luck"],
     }
 
     for key in to_remove:

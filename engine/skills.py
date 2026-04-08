@@ -627,6 +627,50 @@ def _buff_permAgiLuk(state: GameState, skill: Skill) -> None:
     state.recalc_stats()
 
 
+def _buff_innerFire(state: GameState, skill: Skill) -> None:
+    """Inner Fire / Lucky Coin Toss / Threshold Sense: stat bonuses.
+
+    Args:
+        state: Current game state
+        skill: Skill containing buff_duration
+
+    Side Effects:
+        Adds temp stats and recalculates. Warden: WIS+3, Mad Prophet: LUCK+5.
+    """
+    state.temp_stats["wis"] = state.temp_stats.get("wis", 0) + 3
+    state.temp_stats["luck"] = state.temp_stats.get("luck", 0) + 5
+    state.buffs["innerFire"] = skill.buff_duration
+    state.recalc_stats()
+
+
+def _buff_luckyDodge(state: GameState, skill: Skill) -> None:
+    """Lucky Dodge / Unreliable Fortune: LUCK bonus.
+
+    Args:
+        state: Current game state
+        skill: Skill containing buff_duration
+
+    Side Effects:
+        Adds temp LUCK+3 and recalculates.
+    """
+    state.temp_stats["luck"] = state.temp_stats.get("luck", 0) + 3
+    state.buffs["luckyDodge"] = skill.buff_duration
+    state.recalc_stats()
+
+
+def _buff_critUp(state: GameState, skill: Skill) -> None:
+    """Eldritch Sight / Fate Reading / Cartographer's Eye / Collector's Eye.
+
+    Args:
+        state: Current game state
+        skill: Skill containing buff_duration
+
+    Side Effects:
+        Sets critUp buff (evasion from EVASION_BUFF_TABLE, crit applied in damage calc).
+    """
+    state.buffs["critUp"] = skill.buff_duration
+
+
 def _buff_permCrit10(state: GameState, skill: Skill) -> None:
     """Sixth Sense: CRIT+25% for duration.
 
@@ -945,6 +989,9 @@ _BUFF_MESSAGES: Dict[str, str] = {
     "randStat2": "Prophetic Insight! {stats}! for 5 turns!",
     "madImmune": "Madness Mastery! MAD no longer causes death! (+15 MAD)",
     "madPower": "Empower Madness! +25% DMG! (+15 MAD)",
+    "innerFire": "Inner Fire burns! WIS+3, LUCK+5 for {d} turns!",
+    "luckyDodge": "Lucky Dodge! EVA+35%, LUCK+3 for {d} turns!",
+    "critUp": "Eldritch Sight! EVA+15% for {d} turns!",
     "calmMind": "Leng's Whisper muffles the madness. -3 MAD!",
     "eldritchBargain": "Eldritch Bargain! -3 to {stats}, +50 gold!",
     "foolLuck": "The Fool's Luck! -10 MAD, nullify next 3 attacks!",
@@ -959,6 +1006,44 @@ _BUFF_MESSAGES: Dict[str, str] = {
     "astral": "Astral Projection! EVA+40%, mDEF+60% for {d} turns!",
     "statSwap": "Mind Over Matter! pDEF and mDEF swapped for {d} turns!",
     "dreadnought": "Dreadnought! Damage taken converts to ATK for {d} turns!",
+    # --- Previously missing messages ---
+    "atkCritUp": "Blood Scent! ATK+20%, CRIT+15% for {d} turns!",
+    "bladeAura": "Aura of Blades! 15% counter-attack for {d} turns!",
+    "bloodAura": "Aura of Blood! 10% lifesteal for {d} turns!",
+    "bulwark": "Bulwark! pDEF+60%, mDEF+60% for {d} turns!",
+    "chant": "Guttural Chant! pDEF+20%, mDEF+20% for {d} turns!",
+    "copyAttack": "Living Shadow active! Copies enemy attack for {d} turns!",
+    "darkPact": "Dark Pact! +30% DMG, debuffs extended! (-15% HP)",
+    "divineInterv": "Divine Intervention! Next {v} attacks nullified!",
+    "dreamShell": "Dream Shell! EVA+50%, mDEF+80% for {d} turns!",
+    "dreamVeil": "Veil of the Dream! EVA+35% for {d} turns!",
+    "evasionUp": "Evasion! EVA+40% for {d} turns!",
+    "fadeBlack": "Fade to Black! EVA+20%, regen 5% for {d} turns!",
+    "finalStand": "Final Stand! Cannot die this turn!",
+    "flicker": "Flicker! 50% dodge next {v} attacks!",
+    "fortress": "Divine Fortress! pDEF/mDEF+80%, +2 barriers for {d} turns!",
+    "hallowed": "Hallowed Ground! pDEF+40%, mDEF+40% for {d} turns!",
+    "ironSkin": "Iron Skin! pDEF+60%, mDEF+30% for {d} turns!",
+    "mDefUp": "Arcane Ward! mDEF+50% for {d} turns!",
+    "mirrorImg": "Mirror Images! 30% damage reduction for {d} turns!",
+    "nimbleFingers": "Nimble Fingers! +20% loot quality for {d} floors!",
+    "oath": "Oath of Protection! Shield + regen for {d} turns!",
+    "regen": "Consecrated Ground! Regen 8% HP/turn for {d} turns!",
+    "regen5": "Unnatural Vitality! Regen 5% HP/turn for {d} turns!",
+    "retribAura": "Aura of Retribution! Reflect 30% damage for {d} turns!",
+    "shadowMeld": "Shadow Meld! Invisible 1 turn, next attack +100%!",
+    "skipCombat": "Shadow Step! Next combat encounter skipped!",
+    "smokeScreen": "Smoke Screen! EVA+25% for {d} turns!",
+    "statSwap": "Mind Over Matter! pDEF/mDEF swapped for {d} turns!",
+    "thoughtform": "Thoughtform Armor! pDEF+30%, mDEF+30% for {d} turns!",
+    "umbralAegis": "Umbral Aegis! EVA+60%, pDEF+40% for {d} turns!",
+    "undying": "Undying Fury! Cannot die for {d} turns!",
+    "undyingPact": "Undying Pact! Cannot die, +50% ATK for {d} turns!",
+    "wardAura": "Aura of Warding! mDEF+30% for {d} turns!",
+    "warpTime": "Warp Time! CDs reset, +20% DMG for {d} turns!",
+    "ethereal": "Ethereal Jaunt! Invulnerable 1 turn, next attack +150%!",
+    "looterInst": "Looter's Instinct! +10% loot quality for {d} floors!",
+    "eclipse": "Eclipse! All attacks crit, +30% DMG for {d} turns!",
 }
 
 BUFF_HANDLERS: Dict[str, BuffApplyFn] = {
@@ -970,6 +1055,9 @@ BUFF_HANDLERS: Dict[str, BuffApplyFn] = {
     "permWisStr": _buff_permWisStr,
     "permAgiLuk": _buff_permAgiLuk,
     "permCrit10": _buff_permCrit10,
+    "innerFire": _buff_innerFire,
+    "luckyDodge": _buff_luckyDodge,
+    "critUp": _buff_critUp,
     "permAll1": _buff_permAll1,
     "resetCds": _buff_resetCds,
     "bloodRitual": _buff_bloodRitual,
@@ -1094,6 +1182,14 @@ def player_use_skill(state: GameState, skill_index: int) -> List[LogEntry]:
     # Consume ethereal buff after attack
     if state.buffs.get("ethereal", 0) > 0 and dmg > 0:
         state.buffs["ethereal"] = 0
+
+    # Living Shadow: copy enemy's last attack as bonus damage
+    if state.buffs.get("copyAttack", 0) > 0 and c.last_enemy_skill and dmg > 0:
+        copied = c.last_enemy_skill
+        copied_power = copied.get("power", 1.0)
+        copy_dmg = int(state.atk * copied_power * 0.5)
+        e.hp = max(0, e.hp - copy_dmg)
+        logs.append((f"Living Shadow copies {copied.get('name', 'attack')} for {copy_dmg}!", "damage"))
 
     if state.madness >= MADNESS_MAX:
         return logs + [("Your mind shatters from the madness!", "damage")]

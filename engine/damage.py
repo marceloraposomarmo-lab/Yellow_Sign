@@ -334,6 +334,12 @@ def apply_damage_to_player(
         reflected = int(dmg * RETRIB_AURA_REFLECT_PCT)
         state.combat.enemy.hp = max(0, state.combat.enemy.hp - reflected)
 
+    if state.buffs.get("bladeAura", 0) > 0 and state.combat and dmg > 0:
+        if random.random() < 0.15:
+            counter = int(state.atk * 0.30)
+            state.combat.enemy.hp = max(0, state.combat.enemy.hp - counter)
+            state.combat.add_log(f"Aura of Blades counters for {counter}!", "damage")
+
     if state.buffs.get("dreadnought", 0) > 0:
         atk_bonus = int(dmg * DREADNOUGHT_CONVERSION_PCT)
         state.temp_stats["str"] = state.temp_stats.get("str", 0) + atk_bonus

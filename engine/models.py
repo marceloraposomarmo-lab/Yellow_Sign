@@ -216,6 +216,7 @@ class CombatState:
         self.phase3 = False
         self.turn_count = 0
         self.next_enemy_skill = None  # pre-selected enemy intent
+        self.last_enemy_skill = None  # for copyAttack (Living Shadow)
 
     def add_log(self, text, log_type="info"):
         self.log.append((text, log_type))
@@ -506,6 +507,8 @@ class GameState:
     def add_madness(self, amount):
         """Add madness, returning True if game over triggered."""
         self.madness = max(0, min(100, self.madness + amount))
+        if self.buffs.get("madImmune", 0) > 0:
+            return False
         return self.madness >= 100
 
     def check_level_up(self):

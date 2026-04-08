@@ -140,6 +140,7 @@ def enemy_turn(state: GameState) -> List[Tuple[str, str]]:
         c.next_enemy_skill = None
     else:
         skill = random.choice(e.skills)
+    c.last_enemy_skill = skill
     stype = skill.get("type", "physical")
     spower = skill.get("power", 1.0)
 
