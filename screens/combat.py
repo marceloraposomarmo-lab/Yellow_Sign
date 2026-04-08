@@ -8,6 +8,9 @@ from engine import (player_use_skill, enemy_turn, check_boss_phase,
                     process_player_status_effects, generate_item, advance_floor,
                     combat_run_attempt, _get_enemy_intent_message,
                     calc_preview_damage)
+from data import (XP_BASE, XP_PER_FLOOR, XP_BOSS_BONUS,
+                  GOLD_BASE, GOLD_PER_FLOOR, GOLD_BOSS_BONUS, GOLD_BASE_RANDOM_MAX,
+                  MADNESS_BOSS_KILL, MADNESS_NORMAL_KILL)
 
 class CombatScreen(Screen):
     def __init__(self, game):
@@ -546,11 +549,11 @@ class CombatScreen(Screen):
         self._victory_state = None
 
         s.kills += 1
-        xp_g = 12 + s.floor * 4 + (80 if c.is_boss else 0)
-        gold_g = 6 + random.randint(0, 8) + s.floor * 2 + (50 if c.is_boss else 0)
+        xp_g = XP_BASE + s.floor * XP_PER_FLOOR + (XP_BOSS_BONUS if c.is_boss else 0)
+        gold_g = GOLD_BASE + random.randint(0, GOLD_BASE_RANDOM_MAX) + s.floor * GOLD_PER_FLOOR + (GOLD_BOSS_BONUS if c.is_boss else 0)
         s.xp += xp_g
         s.gold += gold_g
-        s.add_madness(-15 if c.is_boss else 3)
+        s.add_madness(MADNESS_BOSS_KILL if c.is_boss else MADNESS_NORMAL_KILL)
         loot = generate_item(s.floor, luck=s.luck, buffs=s.buffs)
         leveled = s.check_level_up()
 

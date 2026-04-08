@@ -155,6 +155,10 @@ def tick_player_buffs(state: GameState) -> List[Tuple[str, str]]:
             h = int(state.max_hp * REGEN5_HP_PCT)
             state.hp = min(state.max_hp, state.hp + h)
             logs.append((f"Regen heals {h} HP.", "heal"))
+        elif key == "fadeBlack" and state.buffs[key] >= 0:
+            h = int(state.max_hp * REGEN5_HP_PCT)
+            state.hp = min(state.max_hp, state.hp + h)
+            logs.append((f"Fade to Black regen heals {h} HP.", "heal"))
         elif key == "oath" and state.buffs[key] >= 0:
             h = int(state.max_hp * OATH_HP_PCT)
             state.hp = min(state.max_hp, state.hp + h)
@@ -184,7 +188,6 @@ def tick_player_buffs(state: GameState) -> List[Tuple[str, str]]:
             state.recalc_stats()
             logs.append((f"{key} — temporary stat boost expired.", "info"))
         elif key == "permCrit10":
-            state.crit = max(0, state.crit - 25)
             logs.append(("Sixth Sense — CRIT bonus expired.", "info"))
         else:
             logs.append((f"{key} expired.", "info"))

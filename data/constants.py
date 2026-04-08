@@ -123,6 +123,10 @@ EVASION_BUFF_TABLE = [
     ("dreamShell",   50),
     ("umbralAegis",  60),
     ("astral",       40),
+    ("darkRegenBuff", 20),
+    ("fadeBlack",    20),
+    ("critUp",       15),
+    ("luckyDodge",   35),
 ]
 
 # ═══════════════════════════════════════════
