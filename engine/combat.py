@@ -169,6 +169,8 @@ def check_boss_phase(state: GameState) -> List[Tuple[str, str]]:
     if not c or not c.is_boss:
         return []
     e = c.enemy
+    if e.max_hp <= 0:
+        return []
     pct = e.hp / e.max_hp
     logs: List[Tuple[str, str]] = []
 

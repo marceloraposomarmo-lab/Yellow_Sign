@@ -1,7 +1,7 @@
 """Damage calculation and application logic."""
 
 import random
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any, List
 
 from data import (
     DEFENSE_DENOM, CRIT_BASE_MULT,
@@ -22,7 +22,16 @@ from engine.models import Skill, GameState, has_status
 
 def _base_damage(state: GameState, skill: Skill) -> float:
     """Core damage calculation shared by player and preview paths.
-    Returns raw base damage as float (no random variance, no defense reduction).
+    
+    Args:
+        state: Current game state with player stats and buffs
+        skill: Skill being used for damage calculation
+        
+    Returns:
+        Raw base damage as float (no random variance, no defense reduction)
+        
+    Raises:
+        ZeroDivisionError: Prevented by max_hp > 0 checks
     """
     sv = state.stats.get(skill.stat, 10)
     s2v = state.stats.get(skill.stat2, 10) if skill.stat2 else 0
@@ -53,7 +62,7 @@ def _base_damage(state: GameState, skill: Skill) -> float:
         bd = (5 + sv * 1.5) * (skill.power or 1)
 
     if skill.scaling_low_hp:
-        hr = state.hp / state.max_hp
+        hr = state.hp / state.max_hp if state.max_hp > 0 else 1.0
         bd *= 1 + (1 - hr) * 2.0
 
     if skill.madness_scaling:
@@ -69,7 +78,7 @@ def _base_damage(state: GameState, skill: Skill) -> float:
 
     if skill.execute_bonus and state.combat:
         e = state.combat.enemy
-        if e and e.hp / e.max_hp < EXECUTE_HP_THRESHOLD:
+        if e and e.max_hp > 0 and e.hp / e.max_hp < EXECUTE_HP_THRESHOLD:
             bd *= EXECUTE_DAMAGE_MULT
 
     if skill.luck_bonus:
@@ -79,7 +88,15 @@ def _base_damage(state: GameState, skill: Skill) -> float:
 
 
 def calc_player_damage(state: GameState, skill: Skill) -> int:
-    """Calculate raw player damage for a skill (with random variance)."""
+    """Calculate raw player damage for a skill (with random variance).
+    
+    Args:
+        state: Current game state with player stats and buffs
+        skill: Skill being used for damage calculation
+        
+    Returns:
+        Final damage value after variance and special effects
+    """
     bd = _base_damage(state, skill)
 
     # Random variance
@@ -103,7 +120,13 @@ def calc_player_damage(state: GameState, skill: Skill) -> int:
 
 def calc_preview_damage(state: GameState, skill: Skill) -> Tuple[int, int]:
     """Calculate deterministic preview damage for a skill (no random variance).
-    Returns (base_dmg, final_dmg_after_def) as approximate range center.
+    
+    Args:
+        state: Current game state with player stats and buffs
+        skill: Skill being used for damage calculation
+        
+    Returns:
+        Tuple of (base_dmg, final_dmg_after_def) as approximate range center
     """
     bd = _base_damage(state, skill)
 
@@ -133,7 +156,16 @@ def calc_preview_damage(state: GameState, skill: Skill) -> Tuple[int, int]:
 # ═══════════════════════════════════════════
 
 def apply_damage_to_enemy(state: GameState, raw: float, skill: Optional[Skill]) -> Tuple[int, bool]:
-    """Apply damage to enemy, accounting for defense and crits."""
+    """Apply damage to enemy, accounting for defense and crits.
+    
+    Args:
+        state: Current game state with player stats and combat info
+        raw: Raw damage value before defense reduction
+        skill: Optional skill used for the attack (affects damage type)
+        
+    Returns:
+        Tuple of (actual_damage_dealt, is_critical_hit)
+    """
     e = state.combat.enemy
     df = e.defense
     if skill and skill.type in ("magic", "magic_debuff", "mixed_magic"):
@@ -167,7 +199,15 @@ def apply_damage_to_enemy(state: GameState, raw: float, skill: Optional[Skill]) 
 
 
 def _get_buff_defense_bonus(state: GameState, is_phys: bool) -> int:
-    """Calculate DEF/mDEF percentage bonus from active buffs using registry."""
+    """Calculate DEF/mDEF percentage bonus from active buffs using registry.
+    
+    Args:
+        state: Current game state with active buffs
+        is_phys: True if physical damage, False if magic damage
+        
+    Returns:
+        Percentage bonus to defense (0-100+)
+    """
     pct = 0
     b = state.buffs
     for buff_key, phys_pct, magic_pct in DEFENSE_BUFF_TABLE:
@@ -177,7 +217,14 @@ def _get_buff_defense_bonus(state: GameState, is_phys: bool) -> int:
 
 
 def _get_buff_evasion_bonus(state: GameState) -> int:
-    """Calculate EVA bonus from active buffs using registry."""
+    """Calculate EVA bonus from active buffs using registry.
+    
+    Args:
+        state: Current game state with active buffs
+        
+    Returns:
+        Evasion bonus percentage
+    """
     bonus = 0
     b = state.buffs
     for buff_key, eva_bonus in EVASION_BUFF_TABLE:
@@ -187,7 +234,17 @@ def _get_buff_evasion_bonus(state: GameState) -> int:
 
 
 def apply_damage_to_player(state: GameState, raw: float, is_phys: bool) -> Tuple[int, str]:
-    """Apply damage to player with shield/barrier/evasion/buffs."""
+    """Apply damage to player with shield/barrier/evasion/buffs.
+    
+    Args:
+        state: Current game state with player stats and buffs
+        raw: Raw damage value before mitigation
+        is_phys: True if physical damage, False if magic damage
+        
+    Returns:
+        Tuple of (actual_damage_taken, result_type) where result_type is one of:
+        'barrier', 'shield', 'evade', 'undying', or 'hit'
+    """
     if state.barrier > 0 and raw > 0:
         state.barrier -= 1
         return 0, "barrier"

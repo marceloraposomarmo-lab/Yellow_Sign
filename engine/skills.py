@@ -24,6 +24,8 @@ def _calc_heal_int2_buff(state: GameState, skill: Skill) -> int:
     return h
 
 def _calc_heal_missing_hp(state: GameState, skill: Skill) -> int:
+    if state.max_hp <= 0:
+        return 0
     missing = 1 - state.hp / state.max_hp
     return int(missing * state.max_hp * 0.6)
 
