@@ -216,6 +216,7 @@ class CombatState:
         self.phase3 = False
         self.turn_count = 0
         self.next_enemy_skill = None  # pre-selected enemy intent
+        self.last_enemy_skill = None  # for copyAttack (Living Shadow)
 
     def add_log(self, text, log_type="info"):
         self.log.append((text, log_type))

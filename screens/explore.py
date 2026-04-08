@@ -121,8 +121,13 @@ class ExploreScreen(Screen):
 
         ptype = path["type"]
         if ptype == "combat":
-            start_combat(s, is_boss=False)
-            self.game.switch_screen("combat")
+            if s.buffs.get("skipCombat", 0) > 0:
+                s.buffs["skipCombat"] = 0
+                # Skip this combat, generate a loot room instead
+                self.game.switch_screen("loot")
+            else:
+                start_combat(s, is_boss=False)
+                self.game.switch_screen("combat")
         elif ptype == "event":
             event = random.choice(EVENTS)
             self.game.pending_event = event
