@@ -635,9 +635,8 @@ def _buff_permCrit10(state: GameState, skill: Skill) -> None:
         skill: Skill containing buff_duration
 
     Side Effects:
-        Increases crit chance by 25% (capped at 95%), sets permCrit10 buff
+        Sets permCrit10 buff (crit bonus applied in damage calculation)
     """
-    state.crit = min(95, state.crit + 25)
     state.buffs["permCrit10"] = skill.buff_duration
 
 
@@ -945,6 +944,7 @@ _BUFF_MESSAGES: Dict[str, str] = {
     "bloodRitual": "Blood Ritual! Sacrificed HP for 50 XP!",
     "randStat2": "Prophetic Insight! {stats}! for 5 turns!",
     "madImmune": "Madness Mastery! MAD no longer causes death! (+15 MAD)",
+    "madPower": "Empower Madness! +25% DMG! (+15 MAD)",
     "calmMind": "Leng's Whisper muffles the madness. -3 MAD!",
     "eldritchBargain": "Eldritch Bargain! -3 to {stats}, +50 gold!",
     "foolLuck": "The Fool's Luck! -10 MAD, nullify next 3 attacks!",

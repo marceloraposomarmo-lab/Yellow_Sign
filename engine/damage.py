@@ -200,6 +200,8 @@ def apply_damage_to_enemy(
         cc += CRIT_UP_BONUS
     if state.buffs.get("atkCritUp", 0) > 0:
         cc += ATK_CRIT_UP_BONUS
+    if state.buffs.get("permCrit10", 0) > 0:
+        cc += 25
     if skill and skill.flat_crit_bonus:
         cc += skill.flat_crit_bonus
     if skill and skill.guaranteed_crit:

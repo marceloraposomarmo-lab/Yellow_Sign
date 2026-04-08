@@ -76,6 +76,11 @@ def load_game(slot: int = 0) -> Optional[GameState]:
     except (json.JSONDecodeError, IOError):
         return None
 
+    # Validate save version
+    file_version = data.get("version", 1)
+    if file_version != SAVE_VERSION:
+        return None
+
     state = GameState()
     state.class_id = data["class_id"]
     state.class_name = data["class_name"]
