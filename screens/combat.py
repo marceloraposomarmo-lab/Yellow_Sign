@@ -962,6 +962,10 @@ class CombatScreen(Screen):
         if not skill:
             return
 
+        # Main enemy panel dimensions (must match values in draw method)
+        panel_w = 495
+        panel_h = 100
+
         # Intent panel positioning - below the main enemy panel
         intent_w = 200
         intent_h = 50
