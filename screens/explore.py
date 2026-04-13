@@ -20,7 +20,7 @@ class ExploreScreen(Screen):
         s = self.game.state
         self.narrative = FLOOR_NARRATIVES[min(s.floor - 1, len(FLOOR_NARRATIVES) - 1)]
         # Initialize typewriter effect for floor narrative
-        self.typewriter = TypewriterText(self.narrative, reveal_speed=40.0)
+        self.typewriter = TypewriterText(self.narrative, reveal_speed=48.0)
         self.narrative_complete = False
         
         is_boss = s.floor >= s.max_floor

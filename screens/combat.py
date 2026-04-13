@@ -237,6 +237,7 @@ class CombatScreen(Screen):
         self._player_status_rects = []  # [(Rect, effect_type), ...] for hover tooltips
         self._enemy_action_text = None  # (text, x, y, color, timer, vy) floating text
         self._enemy_flash_timer = 0  # brief flash when enemy acts
+        self._time = 0.0  # Accumulated time for eldritch wave animations
 
         # ─────────────────────────────────────────────────────────────────────────────
         # ENEMY INTENT DISPLAY SYSTEM
@@ -269,6 +270,7 @@ class CombatScreen(Screen):
         self.shake_offset_x = 0
         self.shake_offset_y = 0
         self._player_hit_flash = 0
+        self._time = 0.0
         self._intent_pulse = 0
         self._intent_particles = []
         self._build_buttons()
@@ -396,9 +398,8 @@ class CombatScreen(Screen):
                 self._spawn_blood_particles(x, y, count=10)
                 self._spawn_magic_particles(x, y, count=4)
 
-        # Damage numbers now have: [text, x, y, color, timer, vy, scale, is_crit]
-        # scale starts at 1.5 for pop effect, decays to 1.0
-        self.damage_numbers.append([text, x, y, color, 1.5, -60, 1.5 if is_crit else 1.2, is_crit])
+        # [text, x, y, color, timer, vy, scale, is_crit, base_y]
+        self.damage_numbers.append([text, x, y, color, 1.5, -60, 1.5 if is_crit else 1.2, is_crit, y])
 
     def trigger_shake(self, intensity=8, duration=0.3, direction=0, is_enemy_damage=False):
         """Trigger screen shake with enhanced options.
@@ -527,6 +528,7 @@ class CombatScreen(Screen):
             return
 
         # --- Normal update (non-victory) ---
+        self._time += dt  # Accumulate time for eldritch animations
         # Update damage numbers with scale animation
         for dn in self.damage_numbers:
             dn[2] += dn[5] * dt  # y position
@@ -1183,15 +1185,29 @@ class CombatScreen(Screen):
                 else:
                     surface.blit(enemy_sprite, (sprite_x, sprite_y))
 
-        # Enemy action floating text
+        # Enemy action floating text — eldritch styled
         if self._enemy_action_text:
             text, fx, fy, color, timer, vy = self._enemy_action_text
             # Fade alpha based on remaining time
             alpha_ratio = min(1.0, timer / 0.5) if timer < 0.5 else 1.0
             font = self.assets.fonts["small"]
-            text_surf = font.render(text, True, color)
+            # Wave distortion for otherworldly feel
+            wave_offset = math.sin(self._time * 5.0 + fx * 0.02) * 4
+            # Eldritch purple tint
+            eld_action_color = (
+                max(0, min(255, color[0] + 30)),
+                max(0, min(255, color[1] + 10)),
+                max(0, min(255, color[2] + 60)),
+            )
+            # Ghostly trailing shadow
+            shadow_surf = font.render(text, True, (80, 30, 120))
+            shadow_surf.set_alpha(int(120 * alpha_ratio))
+            shadow_rect = shadow_surf.get_rect(center=(int(fx) + wave_offset + 3, int(fy) + 3))
+            surface.blit(shadow_surf, shadow_rect)
+            # Main text
+            text_surf = font.render(text, True, eld_action_color)
             text_surf.set_alpha(int(255 * alpha_ratio))
-            text_rect = text_surf.get_rect(center=(int(fx), int(fy)))
+            text_rect = text_surf.get_rect(center=(int(fx) + wave_offset, int(fy)))
             surface.blit(text_surf, text_rect)
 
         # --- Character sprite (left side) — hidden during dramatic pause ---
@@ -1332,32 +1348,112 @@ class CombatScreen(Screen):
             fade_surf.fill((0, 0, 0, self._victory_fade_alpha))
             surface.blit(fade_surf, (0, 0))
 
-        # Damage numbers with scale animation and crit styling
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # ELDRITCH FLOATING DAMAGE NUMBERS
+        # Wavy distortion, trailing shadows, flickering glow, and cosmic color shifts
+        # ═══════════════════════════════════════════════════════════════════════════════
         for dn in self.damage_numbers:
-            text, x, y, color, timer, vy, scale, is_crit = dn
+            text, x, y, color, timer, vy, scale, is_crit = dn[:8]
+            base_y = dn[8] if len(dn) > 8 else y
             font_key = "heading"
+
             # Apply scale transform for pop effect
             if scale != 1.0:
                 font_size = int(self.assets.fonts[font_key].get_height() * scale)
                 scaled_font = pygame.font.Font(None, max(24, font_size))
             else:
                 scaled_font = self.assets.fonts[font_key]
-            
-            text_surf = scaled_font.render(text, True, color)
-            
-            # Crit damage gets extra outline/glow
+
+            # ── Eldritch wave distortion ──
+            # Crits get a sinusoidal horizontal sway; normal hits get a subtle drift
             if is_crit:
-                # Create glow surface
-                glow_surf = scaled_font.render(text, True, (255, 220, 100))
-                glow_rect = glow_surf.get_rect(center=(int(x) + ox, int(y) + oy))
-                # Offset glow slightly for dramatic effect
-                surface.blit(glow_surf, (glow_rect.x - 2, glow_rect.y - 2))
-                surface.blit(glow_surf, (glow_rect.x + 2, glow_rect.y - 2))
-                surface.blit(glow_surf, (glow_rect.x - 2, glow_rect.y + 2))
-                surface.blit(glow_surf, (glow_rect.x + 2, glow_rect.y + 2))
-            
-            text_rect = text_surf.get_rect(center=(int(x) + ox, int(y) + oy))
+                wave_x = math.sin(self._time * 8.0 + y * 0.05) * 6
+                wave_y = math.cos(self._time * 6.0 + x * 0.03) * 3
+            else:
+                wave_x = math.sin(self._time * 3.0 + y * 0.04) * 2
+                wave_y = 0
+
+            draw_x = int(x + wave_x) + ox
+            draw_y = int(y + wave_y) + oy
+
+            # ── Flickering alpha for dramatic effect ──
+            if is_crit:
+                flicker = 0.7 + 0.3 * math.sin(self._time * 15.0)
+            else:
+                flicker = 0.85 + 0.15 * math.sin(self._time * 8.0 + x)
+            alpha_mod = int(255 * flicker)
+
+            # ── Trailing eldritch shadow text ──
+            # Casts ghostly afterimages that drift and fade
+            eldritch_shadow_colors = [
+                (100, 50, 160),   # Deep purple
+                (74, 14, 78),     # Eldritch violet
+                (50, 30, 100),    # Void purple
+            ]
+            num_trails = 3 if is_crit else 1
+            for trail_i in range(num_trails):
+                trail_offset_x = (trail_i + 1) * (4 if is_crit else 2)
+                trail_offset_y = (trail_i + 1) * 3
+                trail_alpha = max(0, int(alpha_mod * (0.4 - trail_i * 0.12)))
+                trail_color = eldritch_shadow_colors[trail_i % len(eldritch_shadow_colors)]
+                trail_surf = scaled_font.render(text, True, trail_color)
+                trail_surf.set_alpha(trail_alpha)
+                trail_rect = trail_surf.get_rect(center=(draw_x + trail_offset_x, draw_y + trail_offset_y))
+                surface.blit(trail_surf, trail_rect)
+
+            # ── Main text with color shift ──
+            # Crits shift between gold and purple for an otherworldly feel
+            if is_crit:
+                t = self._time * 4.0
+                r = int(color[0] * 0.5 + 175 * 0.5 + math.sin(t) * 40)
+                g = int(color[1] * 0.5 + 130 * 0.5 + math.sin(t + 1.0) * 30)
+                b = int(color[2] * 0.5 + 225 * 0.5 + math.cos(t) * 30)
+                eldritch_color = (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
+            else:
+                # Subtle purple tint on normal hits
+                eldritch_color = (
+                    max(0, min(255, color[0] + 15)),
+                    max(0, min(255, color[1] - 20)),
+                    max(0, min(255, color[2] + 40)),
+                )
+
+            text_surf = scaled_font.render(text, True, eldritch_color)
+            text_surf.set_alpha(alpha_mod)
+
+            # ── Eldritch glow aura for crits ──
+            if is_crit:
+                glow_colors = [(232, 185, 45), (175, 130, 225), (255, 220, 100), (140, 80, 200)]
+                for gi, glow_col in enumerate(glow_colors):
+                    glow_surf = scaled_font.render(text, True, glow_col)
+                    glow_alpha = max(0, int(alpha_mod * (0.35 - gi * 0.07)))
+                    glow_surf.set_alpha(glow_alpha)
+                    spread = 3 + gi * 2
+                    glow_rect = glow_surf.get_rect(center=(
+                        draw_x + math.sin(self._time * 5.0 + gi) * spread,
+                        draw_y + math.cos(self._time * 4.0 + gi * 0.7) * spread
+                    ))
+                    surface.blit(glow_surf, glow_rect)
+            else:
+                # Subtle single glow for normal damage
+                glow_surf = scaled_font.render(text, True, (80, 40, 120))
+                glow_surf.set_alpha(int(alpha_mod * 0.25))
+                glow_rect = glow_surf.get_rect(center=(draw_x + 2, draw_y + 2))
+                surface.blit(glow_surf, glow_rect)
+
+            # ── Render the main text ──
+            text_rect = text_surf.get_rect(center=(draw_x, draw_y))
             surface.blit(text_surf, text_rect)
+
+            # ── Tiny floating eldritch runes for crits ──
+            if is_crit and random.random() < 0.3:
+                rune_chars = ["%", "&", "#", "~", "*", "+"]
+                rune_char = random.choice(rune_chars)
+                rune_color = random.choice([(175, 130, 225), (232, 185, 45), (100, 60, 160)])
+                rune_surf = pygame.font.Font(None, 16).render(rune_char, True, rune_color)
+                rune_surf.set_alpha(random.randint(60, 140))
+                rune_x = draw_x + random.randint(-30, 30)
+                rune_y = draw_y + random.randint(-20, 10)
+                surface.blit(rune_surf, (rune_x, rune_y))
 
         # Status effect tooltips on hover
         self._draw_status_tooltips(surface)

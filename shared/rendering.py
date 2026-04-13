@@ -810,7 +810,7 @@ def draw_text_fitted_glow(surface, text, font, color, x, y, max_width,
 class TypewriterText:
     """Manages typewriter-style text reveal effect."""
     
-    def __init__(self, full_text, reveal_speed=30.0):
+    def __init__(self, full_text, reveal_speed=36.0):
         """
         Args:
             full_text: The complete text to display

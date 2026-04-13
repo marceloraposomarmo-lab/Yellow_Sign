@@ -21,7 +21,7 @@ class EventScreen(Screen):
         self.narrative_complete = False
         # Initialize typewriter effect for narrative text
         event = self.game.pending_event
-        self.typewriter = TypewriterText(event["text"], reveal_speed=35.0)
+        self.typewriter = TypewriterText(event["text"], reveal_speed=42.0)
         
         n = len(event["outcomes"])
         bw, bh = 500, 50
