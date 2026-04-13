@@ -248,9 +248,9 @@ class Assets:
                 decor_path if os.path.exists(decor_path) else None)
             if eld_path:
                 self._font_paths["eldritch"] = eld_path
-                self.fonts["eldritch_crit"] = _try_load_font(eld_path, 42, "eldritch_crit") or self.fonts.get("heading")
-                self.fonts["eldritch"] = _try_load_font(eld_path, 34, "eldritch") or self.fonts.get("heading")
-                self.fonts["eldritch_rune"] = _try_load_font(eld_path, 20, "eldritch_rune") or self.fonts.get("small")
+                self.fonts["eldritch_crit"] = _try_load_font(eld_path, 30, "eldritch_crit") or self.fonts.get("heading")
+                self.fonts["eldritch"] = _try_load_font(eld_path, 24, "eldritch") or self.fonts.get("heading")
+                self.fonts["eldritch_rune"] = _try_load_font(eld_path, 14, "eldritch_rune") or self.fonts.get("small")
                 print(f"  ✓ Eldritch combat fonts loaded from {eld_path}")
             else:
                 # Store heading font path for dynamic scaling

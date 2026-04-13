@@ -1349,21 +1349,27 @@ class CombatScreen(Screen):
             surface.blit(fade_surf, (0, 0))
 
         # ═══════════════════════════════════════════════════════════════════════════════
-        # ELDRITCH FLOATING DAMAGE NUMBERS — "Writhe Font" System
-        # Per-character rendering with individual chaos, rotation, scale jitter,
-        # ink drips, and cosmic corruption for a truly otherworldly feel.
+        # ELDRITCH FLOATING DAMAGE NUMBERS — Victorian Writhe System
+        # Restrained menace: purple, red, and yellow only.
+        # Cinzel Decorative Bold — refined, elegant, wrong.
         # ═══════════════════════════════════════════════════════════════════════════════
 
-        # Eldritch rune symbols for corruption/drip effects
-        _ELDRITCH_RUNES = ["\u2020", "\u2726", "\u263D", "\u2694", "\u2605",
-                           "\u2736", "\u2050", "\u2742", "\u2625", "\u271D"]
-        _DRIP_RUNES = ["\u2022", "\u25CF", "\u2219", "\u00B7"]
+        # Palette: strictly purple / crimson / gold
+        _PURPLE = (175, 130, 225)
+        _PURPLE_DEEP = (120, 60, 180)
+        _PURPLE_VOID = (74, 14, 78)
+        _CRIMSON = (196, 30, 58)
+        _CRIMSON_DARK = (120, 15, 30)
+        _GOLD = (212, 160, 23)
+        _GOLD_BRIGHT = (232, 185, 45)
+
+        # Victorian decorative runes
+        _ELDRITCH_RUNES = ["\u2020", "\u2726", "\u263D", "\u2694", "\u2736", "\u2625", "\u271D"]
 
         for dn in self.damage_numbers:
             text, x, y, color, timer, vy, scale, is_crit = dn[:8]
 
             # ── Font selection ──
-            # Crits use the big bold ornate font; normal hits use the medium one
             if is_crit:
                 base_font = self.assets.fonts.get("eldritch_crit") or self.assets.fonts["heading"]
                 rune_font = self.assets.fonts.get("eldritch_rune") or self.assets.fonts["small"]
@@ -1372,23 +1378,22 @@ class CombatScreen(Screen):
                 rune_font = self.assets.fonts.get("eldritch_rune") or self.assets.fonts["small"]
 
             # ── Proper themed font scaling for pop effect ──
-            # FIX: use actual font file path instead of default system font
             if scale != 1.0 and self.assets._font_paths.get("eldritch"):
                 try:
                     font_size = int(base_font.get_height() * scale)
                     scaled_font = pygame.font.Font(self.assets._font_paths["eldritch"],
-                                                   max(20, font_size))
+                                                   max(14, font_size))
                 except Exception:
                     scaled_font = base_font
             else:
                 scaled_font = base_font
 
-            # ── Wave distortion (applied to entire number as base offset) ──
+            # ── Subtle wave distortion ──
             if is_crit:
-                wave_x = math.sin(self._time * 8.0 + y * 0.05) * 5
-                wave_y = math.cos(self._time * 6.0 + x * 0.03) * 3
+                wave_x = math.sin(self._time * 5.0 + y * 0.04) * 3
+                wave_y = math.cos(self._time * 4.0 + x * 0.02) * 1.5
             else:
-                wave_x = math.sin(self._time * 3.0 + y * 0.04) * 2
+                wave_x = math.sin(self._time * 2.0 + y * 0.03) * 1.5
                 wave_y = 0
 
             base_draw_x = int(x + wave_x) + ox
@@ -1396,43 +1401,39 @@ class CombatScreen(Screen):
 
             # ── Flickering alpha ──
             if is_crit:
-                flicker = 0.7 + 0.3 * math.sin(self._time * 15.0)
+                flicker = 0.75 + 0.25 * math.sin(self._time * 8.0)
             else:
-                flicker = 0.85 + 0.15 * math.sin(self._time * 8.0 + x)
+                flicker = 0.9 + 0.1 * math.sin(self._time * 4.0 + x)
             alpha_mod = int(255 * flicker)
 
-            # ── PER-CHARACTER WRITHE RENDERING ──
-            # Each character is rendered individually with its own chaos parameters.
-            # This makes the number feel alive — digits writhe independently.
+            # ── PER-CHARACTER RENDERING ──
             chars = list(text)
             char_surfaces = []
             total_w = 0
 
             for ci, ch in enumerate(chars):
-                # Individual character chaos seed (stable per character per frame)
                 seed = ci * 7.3 + hash(ch) * 0.13
 
                 if is_crit:
-                    # Strong chaos for crits
-                    char_rot = math.sin(self._time * 10.0 + seed) * 12  # ±12 degrees
-                    char_dy = math.sin(self._time * 7.0 + seed * 1.3) * 5  # ±5px vertical jitter
-                    char_scale = 1.0 + math.sin(self._time * 6.0 + seed * 0.9) * 0.15  # 0.85-1.15x
-                    # "Corruption flicker": 10% chance per char per frame to be extra distorted
-                    corrupted = random.random() < 0.10
+                    # Refined writhe — Victorian menace, not a carnival
+                    char_rot = math.sin(self._time * 5.0 + seed) * 4     # ±4 degrees
+                    char_dy = math.sin(self._time * 3.5 + seed * 1.3) * 2  # ±2px
+                    char_scale = 1.0 + math.sin(self._time * 3.0 + seed * 0.9) * 0.06  # 0.94-1.06
+                    corrupted = random.random() < 0.05  # Rare corruption
                     if corrupted:
-                        char_rot += random.choice([-20, 20]) + math.sin(self._time * 20.0) * 8
-                        char_scale *= 1.3
+                        char_rot += random.choice([-12, 12])
+                        char_scale *= 1.15
                 else:
-                    # Subtle chaos for normal hits
-                    char_rot = math.sin(self._time * 4.0 + seed) * 3  # ±3 degrees
-                    char_dy = math.sin(self._time * 3.0 + seed) * 1.5  # ±1.5px
-                    char_scale = 1.0 + math.sin(self._time * 2.5 + seed) * 0.05  # nearly stable
+                    # Nearly still — elegant drift
+                    char_rot = math.sin(self._time * 2.5 + seed) * 1.5  # ±1.5 degrees
+                    char_dy = math.sin(self._time * 2.0 + seed) * 1.0  # ±1px
+                    char_scale = 1.0 + math.sin(self._time * 1.5 + seed) * 0.03
                     corrupted = False
 
-                # Render the character
-                if char_scale != 1.0 and self.assets._font_paths.get("eldritch"):
+                # Render character
+                if abs(char_scale - 1.0) > 0.01 and self.assets._font_paths.get("eldritch"):
                     try:
-                        ch_size = max(16, int(scaled_font.get_height() * char_scale))
+                        ch_size = max(12, int(scaled_font.get_height() * char_scale))
                         ch_font = pygame.font.Font(self.assets._font_paths["eldritch"], ch_size)
                         ch_surf = ch_font.render(ch, True, (255, 255, 255))
                     except Exception:
@@ -1440,28 +1441,22 @@ class CombatScreen(Screen):
                 else:
                     ch_surf = scaled_font.render(ch, True, (255, 255, 255))
 
-                # Apply rotation via pygame.transform.rotate
-                if abs(char_rot) > 0.5:
+                if abs(char_rot) > 0.3:
                     ch_surf = pygame.transform.rotate(ch_surf, char_rot)
 
                 char_surfaces.append((ch_surf, char_dy, corrupted, ci))
                 total_w += ch_surf.get_width()
 
-            # ── Center the whole writhing number around the target position ──
             cursor_x = base_draw_x - total_w // 2
 
-            # ── PASS 1: Trailing ghost shadows ──
-            eldritch_shadow_colors = [
-                (100, 50, 160),   # Deep purple
-                (74, 14, 78),     # Eldritch violet
-                (50, 30, 100),    # Void purple
-            ]
-            num_trails = 3 if is_crit else 1
+            # ── PASS 1: Ghost shadow (purple only) ──
+            shadow_colors = [_PURPLE_DEEP, _PURPLE_VOID, _PURPLE]
+            num_trails = 2 if is_crit else 1
             for trail_i in range(num_trails):
-                trail_alpha = max(0, int(alpha_mod * (0.35 - trail_i * 0.10)))
-                trail_color = eldritch_shadow_colors[trail_i % len(eldritch_shadow_colors)]
-                trail_ox = (trail_i + 1) * (4 if is_crit else 2)
-                trail_oy = (trail_i + 1) * (3 if is_crit else 2)
+                trail_alpha = max(0, int(alpha_mod * (0.30 - trail_i * 0.12)))
+                trail_color = shadow_colors[trail_i % len(shadow_colors)]
+                trail_ox = (trail_i + 1) * (3 if is_crit else 2)
+                trail_oy = (trail_i + 1) * 2
                 tcx = cursor_x
                 for ch_surf, char_dy, _, _ in char_surfaces:
                     shadow = ch_surf.copy()
@@ -1472,60 +1467,56 @@ class CombatScreen(Screen):
                                           + char_dy + trail_oy))
                     tcx += ch_surf.get_width()
 
-            # ── PASS 2: Multi-layer glow aura (crits only) ──
+            # ── PASS 2: Glow aura ──
             if is_crit:
-                glow_colors = [(232, 185, 45), (175, 130, 225), (255, 220, 100), (140, 80, 200)]
+                glow_colors = [_GOLD_BRIGHT, _PURPLE, _GOLD, _CRIMSON]
                 for gi, glow_col in enumerate(glow_colors):
-                    glow_alpha = max(0, int(alpha_mod * (0.30 - gi * 0.06)))
-                    spread = 3 + gi * 2
+                    glow_alpha = max(0, int(alpha_mod * (0.22 - gi * 0.05)))
+                    spread = 2 + gi
                     gcx = cursor_x
                     for ch_surf, char_dy, _, ci in char_surfaces:
                         glow = ch_surf.copy()
                         glow.fill(glow_col, special_flags=pygame.BLEND_RGBA_MULT)
                         glow.set_alpha(glow_alpha)
-                        gx = gcx + math.sin(self._time * 5.0 + gi + ci) * spread
+                        gx = gcx + math.sin(self._time * 3.0 + gi + ci) * spread
                         gy = (base_draw_y - ch_surf.get_height() // 2 + char_dy
-                              + math.cos(self._time * 4.0 + gi * 0.7 + ci) * spread)
+                              + math.cos(self._time * 2.5 + gi * 0.7 + ci) * spread)
                         surface.blit(glow, (gx, gy))
                         gcx += ch_surf.get_width()
             else:
-                # Subtle single underglow for normal hits
                 gcx = cursor_x
                 for ch_surf, char_dy, _, _ in char_surfaces:
                     glow = ch_surf.copy()
-                    glow.fill((80, 40, 120), special_flags=pygame.BLEND_RGBA_MULT)
-                    glow.set_alpha(int(alpha_mod * 0.20))
+                    glow.fill(_PURPLE_DEEP, special_flags=pygame.BLEND_RGBA_MULT)
+                    glow.set_alpha(int(alpha_mod * 0.15))
                     surface.blit(glow, (gcx + 2,
                                         base_draw_y - ch_surf.get_height() // 2
                                         + char_dy + 2))
                     gcx += ch_surf.get_width()
 
-            # ── PASS 3: Main characters with eldritch color ──
+            # ── PASS 3: Main characters ──
             for ch_surf, char_dy, corrupted, ci in char_surfaces:
-                # Color: crits oscillate gold↔purple, normal gets purple tint
+                # Crits: oscillate between gold and purple. Normal: muted purple tint.
                 if is_crit:
-                    t = self._time * 4.0 + ci * 0.5
-                    r = int(color[0] * 0.4 + 185 * 0.6 + math.sin(t) * 45)
-                    g = int(color[1] * 0.4 + 130 * 0.6 + math.sin(t + 1.0) * 35)
-                    b = int(color[2] * 0.4 + 225 * 0.6 + math.cos(t) * 35)
-                    eld_color = (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
-                else:
+                    t = self._time * 2.5 + ci * 0.4
+                    blend = (math.sin(t) + 1.0) * 0.5  # 0..1
                     eld_color = (
-                        max(0, min(255, color[0] + 20)),
-                        max(0, min(255, color[1] - 15)),
-                        max(0, min(255, color[2] + 50)),
+                        int(_GOLD[0] * blend + _PURPLE[0] * (1 - blend)),
+                        int(_GOLD[1] * blend + _PURPLE[1] * (1 - blend)),
+                        int(_GOLD[2] * blend + _PURPLE[2] * (1 - blend)),
                     )
+                else:
+                    eld_color = _PURPLE
 
-                # Apply color tint
                 colored = ch_surf.copy()
                 colored.fill(eld_color, special_flags=pygame.BLEND_RGBA_MULT)
                 colored.set_alpha(alpha_mod)
 
-                # Corrupted chars get an extra white-hot flash
+                # Corrupted chars pulse crimson instead of white
                 if corrupted:
                     flash_overlay = colored.copy()
-                    flash_overlay.fill((255, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
-                    flash_overlay.set_alpha(int(alpha_mod * 0.4))
+                    flash_overlay.fill(_CRIMSON, special_flags=pygame.BLEND_RGBA_MULT)
+                    flash_overlay.set_alpha(int(alpha_mod * 0.5))
                     surface.blit(flash_overlay,
                                  (cursor_x, base_draw_y - ch_surf.get_height() // 2 + char_dy))
 
@@ -1533,14 +1524,12 @@ class CombatScreen(Screen):
                 surface.blit(colored, (cursor_x, draw_y_char))
                 cursor_x += ch_surf.get_width()
 
-            # ── PASS 4: Eldritch rune particles (crits only) ──
-            if is_crit and random.random() < 0.35:
+            # ── PASS 4: Victorian rune particles (crits only) ──
+            if is_crit and random.random() < 0.20:
                 rune_char = random.choice(_ELDRITCH_RUNES)
-                rune_color = random.choice([
-                    (175, 130, 225), (232, 185, 45), (100, 60, 160), (140, 80, 200)
-                ])
-                rune_alpha = random.randint(50, 150)
-                rune_rot = random.uniform(-30, 30)
+                rune_color = random.choice([_PURPLE, _GOLD, _CRIMSON])
+                rune_alpha = random.randint(40, 110)
+                rune_rot = random.uniform(-15, 15)
                 try:
                     rune_surf = rune_font.render(rune_char, True, rune_color)
                 except Exception:
@@ -1548,23 +1537,9 @@ class CombatScreen(Screen):
                 if abs(rune_rot) > 1:
                     rune_surf = pygame.transform.rotate(rune_surf, rune_rot)
                 rune_surf.set_alpha(rune_alpha)
-                rune_x = base_draw_x + random.randint(-40, 40) - rune_surf.get_width() // 2
-                rune_y = base_draw_y + random.randint(-25, 15) - rune_surf.get_height() // 2
+                rune_x = base_draw_x + random.randint(-25, 25) - rune_surf.get_width() // 2
+                rune_y = base_draw_y + random.randint(-18, 10) - rune_surf.get_height() // 2
                 surface.blit(rune_surf, (rune_x, rune_y))
-
-            # ── PASS 5: Ink drip particles falling from the number ──
-            if is_crit and random.random() < 0.25:
-                drip_char = random.choice(_DRIP_RUNES)
-                drip_color = random.choice([(40, 15, 60), (60, 25, 80), (30, 10, 50)])
-                try:
-                    drip_surf = rune_font.render(drip_char, True, drip_color)
-                except Exception:
-                    drip_surf = scaled_font.render(".", True, drip_color)
-                drip_surf.set_alpha(random.randint(40, 100))
-                # Drips fall from beneath the text
-                drip_x = base_draw_x + random.randint(-total_w // 2, total_w // 2)
-                drip_y = base_draw_y + random.randint(10, 40)
-                surface.blit(drip_surf, (drip_x, drip_y))
 
         # Status effect tooltips on hover
         self._draw_status_tooltips(surface)
