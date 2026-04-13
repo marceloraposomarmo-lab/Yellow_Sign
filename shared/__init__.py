@@ -27,6 +27,10 @@ from shared.rendering import (
     draw_text_with_glow, draw_text_wrapped_glow, draw_text_fitted_glow,
     draw_hud,
     draw_status_icon, draw_status_icons_row, draw_status_tooltip,
+    # Easing functions and animation utilities
+    ease_out_quad, ease_in_quad, ease_in_out_quad,
+    ease_out_cubic, ease_in_cubic, ease_in_out_cubic,
+    ease_out_bounce, lerp, animate_value,
 )
 
 # Also re-export data imports that were previously in shared.py's namespace

@@ -956,6 +956,8 @@ class CombatScreen(Screen):
         - Intent icon (based on skill type)
         - Skill name
         - Estimated damage or effect description
+        
+        Position: Above the enemy info panel for clear visibility.
         """
         c = self.game.state.combat
         skill = c.next_enemy_skill
@@ -966,11 +968,11 @@ class CombatScreen(Screen):
         panel_w = 495
         panel_h = 100
 
-        # Intent panel positioning - below the main enemy panel
-        intent_w = 200
-        intent_h = 50
+        # Intent panel positioning - ABOVE the main enemy panel for clear visibility
+        intent_w = 220
+        intent_h = 55
         intent_x = panel_x + panel_w - intent_w + ox
-        intent_y = panel_y + panel_h + 8 + oy
+        intent_y = panel_y - intent_h - 10 + oy  # Position above enemy panel
 
         # Determine intent type and colors
         skill_type = skill.get("type", "")

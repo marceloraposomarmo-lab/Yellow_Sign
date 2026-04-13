@@ -12,6 +12,77 @@ from data.buff_debuff_data import get_effect_info
 
 
 # ═══════════════════════════════════════════
+# EASING FUNCTIONS FOR SMOOTH ANIMATIONS
+# ═══════════════════════════════════════════
+
+def ease_out_quad(t):
+    """Quadratic easing out - starts fast, slows down smoothly."""
+    return 1 - (1 - t) * (1 - t)
+
+def ease_in_quad(t):
+    """Quadratic easing in - starts slow, accelerates."""
+    return t * t
+
+def ease_in_out_quad(t):
+    """Quadratic easing in and out - smooth acceleration and deceleration."""
+    if t < 0.5:
+        return 2 * t * t
+    return 1 - pow(-2 * t + 2, 2) / 2
+
+def ease_out_cubic(t):
+    """Cubic easing out - natural deceleration, good for UI settling."""
+    return 1 - pow(1 - t, 3)
+
+def ease_in_cubic(t):
+    """Cubic easing in - smooth acceleration."""
+    return t * t * t
+
+def ease_in_out_cubic(t):
+    """Cubic easing in and out - very smooth motion."""
+    if t < 0.5:
+        return 4 * t * t * t
+    return 1 - pow(-2 * t + 2, 3) / 2
+
+def ease_out_bounce(t):
+    """Bounce easing out - playful bounce effect."""
+    n1 = 7.5625
+    d1 = 2.75
+    if t < 1 / d1:
+        return n1 * t * t
+    elif t < 2 / d1:
+        return n1 * (t - 1.5 / d1) * (t - 1.5 / d1) + 0.75
+    elif t < 2.5 / d1:
+        return n1 * (t - 2.25 / d1) * (t - 2.25 / d1) + 0.9375
+    return n1 * (t - 2.625 / d1) * (t - 2.625 / d1) + 0.984375
+
+def lerp(start, end, t):
+    """Linear interpolation between two values."""
+    return start + (end - start) * t
+
+def animate_value(current, target, dt, speed=5.0):
+    """Smoothly interpolate a value toward a target using cubic easing.
+    
+    Args:
+        current: Current value
+        target: Target value
+        dt: Delta time in seconds
+        speed: Animation speed (higher = faster)
+    
+    Returns:
+        New interpolated value
+    """
+    diff = abs(target - current)
+    if diff < 0.1:
+        return target
+    
+    # Calculate interpolation factor based on dt and speed
+    t = min(1.0, speed * dt)
+    # Use ease_out_cubic for natural deceleration as we approach target
+    eased_t = ease_out_cubic(t)
+    return lerp(current, target, eased_t)
+
+
+# ═══════════════════════════════════════════
 # DRAWING HELPERS
 # ═══════════════════════════════════════════
 
@@ -65,14 +136,45 @@ def draw_text_fitted(surface, text, font, color, x, y, max_width, align="left"):
     fitted = fit_text(font, text, max_width)
     draw_text(surface, fitted, font, color, x, y, align)
 
-def draw_bar(surface, x, y, w, h, current, maximum, fg_color, bg_color=C.SHADOW, border_color=C.ASH):
-    """Draw a horizontal bar (HP, XP, etc.)."""
+def draw_bar(surface, x, y, w, h, current, maximum, fg_color, bg_color=C.SHADOW, border_color=C.ASH,
+             animate=False, prev_value=None, dt=0.0, animation_speed=8.0):
+    """Draw a horizontal bar (HP, XP, etc.).
+    
+    Args:
+        surface: Target pygame surface
+        x, y: Position of the bar
+        w, h: Width and height of the bar
+        current: Current value
+        maximum: Maximum value
+        fg_color: Fill color
+        bg_color: Background color (default: C.SHADOW)
+        border_color: Border color (default: C.ASH)
+        animate: If True, smoothly animate from prev_value to current
+        prev_value: Previous value for animation (used when animate=True)
+        dt: Delta time in seconds (used for animation)
+        animation_speed: Speed of the bar animation (higher = faster)
+    
+    Returns:
+        If animate=True, returns tuple (display_value, new_prev_value) for next frame
+    """
     pygame.draw.rect(surface, border_color, (x - 1, y - 1, w + 2, h + 2), border_radius=3)
     pygame.draw.rect(surface, bg_color, (x, y, w, h), border_radius=2)
+    
     if maximum > 0:
-        fill_w = max(0, int(w * min(1, current / maximum)))
-        if fill_w > 0:
-            pygame.draw.rect(surface, fg_color, (x, y, fill_w, h), border_radius=2)
+        if animate and prev_value is not None and dt > 0:
+            # Smoothly interpolate toward target value using easing
+            display_value = animate_value(prev_value, current, dt, animation_speed)
+            fill_w = max(0, int(w * min(1, display_value / maximum)))
+            if fill_w > 0:
+                pygame.draw.rect(surface, fg_color, (x, y, fill_w, h), border_radius=2)
+            # Return display value and current as the new prev_value for next frame
+            return display_value, current
+        else:
+            fill_w = max(0, int(w * min(1, current / maximum)))
+            if fill_w > 0:
+                pygame.draw.rect(surface, fg_color, (x, y, fill_w, h), border_radius=2)
+    
+    return current, current  # Return unchanged for non-animated case
 
 def draw_panel(surface, x, y, w, h, bg_color=None, border_color=C.GOLD_DIM, border_width=2):
     """Draw an obsidian panel with border."""
@@ -85,8 +187,21 @@ def draw_ornate_panel(surface, x, y, w, h, title=None, title_color=None, title_f
     """Draw an obsidian-textured panel with ornate gold frame."""
     draw_parchment_panel(surface, x, y, w, h, title=title, title_font=title_font)
 
-def draw_ornate_button(surface, rect, text, font, hover=False, color=C.INK, disabled=False):
-    """Draw a button styled with obsidian and gold trim borders."""
+def draw_ornate_button(surface, rect, text, font, hover=False, color=C.INK, disabled=False,
+                       pulse_speed=4.0, shimmer_speed=1.5):
+    """Draw a button styled with obsidian and gold trim borders.
+    
+    Args:
+        surface: Target pygame surface
+        rect: Button rectangle (pygame.Rect)
+        text: Button label text
+        font: Font to render text
+        hover: Whether mouse is hovering over button
+        color: Border/text color
+        disabled: If True, use muted colors
+        pulse_speed: Speed of the pulsing glow effect (higher = faster)
+        shimmer_speed: Speed of the shimmer animation (higher = faster)
+    """
     btn_tex = generate_parchment_texture(rect.w, rect.h)
     btn_tex.set_alpha(240 if not hover else 255)
     surface.blit(btn_tex, (rect.x, rect.y))
@@ -100,21 +215,31 @@ def draw_ornate_button(surface, rect, text, font, hover=False, color=C.INK, disa
     pygame.draw.rect(surface, dim_border, inner_rect, 1, border_radius=3)
     draw_text_with_glow(surface, text, font, text_color, rect.centerx,
                          rect.centery - font.get_height() // 2, align="center")
-    # Animated hover effect
+    # Animated hover effect with eased transitions
     if hover:
         t = pygame.time.get_ticks() / 1000.0
-        pulse_alpha = int(20 + 50 * (0.5 + 0.5 * math.sin(t * 4)))
+        # Use sine wave for smooth pulsing
+        pulse_factor = 0.5 + 0.5 * math.sin(t * pulse_speed)
+        # Apply easing for smoother alpha transitions
+        eased_pulse = ease_in_out_quad(pulse_factor)
+        pulse_alpha = int(20 + 50 * eased_pulse)
+        
         glow = pygame.Surface((rect.w + 12, rect.h + 12), pygame.SRCALPHA)
         glow.fill((120, 80, 200, pulse_alpha))
         surface.blit(glow, (rect.x - 6, rect.y - 6))
-        border_pulse = int(0.5 + 0.5 * math.sin(t * 4))
+        
+        border_pulse = int(eased_pulse)
         if border_pulse:
             gold_glow = pygame.Surface((rect.w + 6, rect.h + 6), pygame.SRCALPHA)
             gold_glow.fill((212, 160, 23, 35))
             surface.blit(gold_glow, (rect.x - 3, rect.y - 3))
-        shimmer_phase = (t * 1.5) % 3.0
+        
+        # Shimmer effect with smooth phase calculation
+        shimmer_phase = (t * shimmer_speed) % 3.0
         if shimmer_phase < 1.0:
-            shimmer_x = rect.x - 20 + int((rect.w + 40) * shimmer_phase)
+            # Use cubic easing for smoother shimmer movement
+            shimmer_t = ease_out_cubic(shimmer_phase)
+            shimmer_x = rect.x - 20 + int((rect.w + 40) * shimmer_t)
             shimmer = pygame.Surface((20, rect.h + 4), pygame.SRCALPHA)
             shimmer.fill((255, 220, 100, 25))
             surface.blit(shimmer, (shimmer_x, rect.y - 2))
@@ -516,12 +641,37 @@ def generate_parchment_texture(width, height):
     return surf
 
 
-def draw_parchment_panel(surface, x, y, w, h, title=None, title_font=None):
-    """Draw an obsidian-textured panel with ornate gold frame borders."""
+def draw_parchment_panel(surface, x, y, w, h, title=None, title_font=None,
+                         animated_border=False, pulse_speed=1.0):
+    """Draw an obsidian-textured panel with ornate gold frame borders.
+    
+    Args:
+        surface: Target pygame surface
+        x, y: Position of the panel
+        w, h: Width and height of the panel
+        title: Optional title text for the panel
+        title_font: Font for the title
+        animated_border: If True, animate the border glow with a subtle pulse
+        pulse_speed: Speed of the border pulse animation (higher = faster)
+    """
     texture = generate_parchment_texture(w, h)
     surface.blit(texture, (x, y))
 
-    # Frame
+    # Frame with optional animated glow
+    if animated_border:
+        t = pygame.time.get_ticks() / 1000.0
+        pulse = 0.5 + 0.5 * math.sin(t * pulse_speed)
+        eased_pulse = ease_in_out_quad(pulse)
+        glow_alpha = int(40 + 30 * eased_pulse)
+        
+        # Subtle outer glow
+        glow_surf = pygame.Surface((w + 10, h + 10), pygame.SRCALPHA)
+        for i in range(5):
+            alpha = int((5 - i) * glow_alpha * 0.3)
+            pygame.draw.rect(glow_surf, (*C.GOLD_TRIM[:3], alpha),
+                           (5 - i, 5 - i, w + i * 2, h + i * 2), 1)
+        surface.blit(glow_surf, (x - 5, y - 5))
+    
     pygame.draw.rect(surface, C.OBSIDIAN_EDGE, (x, y, w, h), 3, border_radius=4)
     pygame.draw.rect(surface, C.GOLD_TRIM, (x + 4, y + 4, w - 8, h - 8), 2, border_radius=3)
     pygame.draw.rect(surface, C.GOLD_DIM, (x + 7, y + 7, w - 14, h - 14), 1, border_radius=2)
