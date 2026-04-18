@@ -367,79 +367,108 @@ class CombatRendererMixin:
                 dest_surface.blit(color_flash, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                 surface.blit(dest_surface, (sprite_x - 10, sprite_y))
 
-        elif self._victory_state == "implosion":
-            # Sprite compresses toward center with distortion
-            enemy_sprite = self.assets.get_sprite(e.name)
-            if enemy_sprite:
-                sw, sh = enemy_sprite.get_size()
-                if sw != sprite_w:
-                    enemy_sprite = pygame.transform.scale(enemy_sprite, (sprite_w, int(sh * sprite_w / sw)))
-                src_w, src_h = enemy_sprite.get_size()
-                progress = self._implosion_progress
-                cx, cy = self._implosion_center
+        elif self._victory_state == "glitch_vanish":
+            # Sprite glitches harder and harder, fading out — no implosion, just decay
+            if self._vanish_opacity > 0:
+                enemy_sprite = self.assets.get_sprite(e.name)
+                if enemy_sprite:
+                    sw, sh = enemy_sprite.get_size()
+                    if sw != sprite_w:
+                        enemy_sprite = pygame.transform.scale(enemy_sprite, (sprite_w, int(sh * sprite_w / sw)))
+                    src_w, src_h = enemy_sprite.get_size()
+                    progress = self._vanish_progress
 
-                # Scale down the sprite as implosion progresses
-                scale_factor = max(0.05, 1.0 - ease_in_cubic(progress) * 0.95)
-                new_w = max(4, int(src_w * scale_factor))
-                new_h = max(4, int(src_h * scale_factor))
-                scaled = pygame.transform.scale(enemy_sprite, (new_w, new_h))
+                    # Build the glitched sprite: horizontal strips with severe offsets
+                    dest_surface = pygame.Surface((src_w + 40, src_h + 20), pygame.SRCALPHA)
+                    strip_h = 3 if progress > 0.5 else 4
+                    for sy in range(0, src_h, strip_h):
+                        strip = enemy_sprite.subsurface((0, sy, src_w, min(strip_h, src_h - sy)))
+                        # Increasingly extreme horizontal offsets as progress climbs
+                        max_offset = 6 + progress * 18
+                        offset_x = int(random.uniform(-max_offset, max_offset))
+                        # Occasional vertical displacement for advanced glitch
+                        offset_y = 0
+                        if progress > 0.5 and random.random() < 0.2:
+                            offset_y = int(random.uniform(-4, 4) * progress)
+                        dest_surface.blit(strip, (20 + offset_x, sy + offset_y))
 
-                # Darken the sprite as it implodes
-                dark_factor = int(200 * progress)
-                dark_overlay = pygame.Surface(scaled.get_size(), pygame.SRCALPHA)
-                dark_overlay.fill((0, 0, 0, min(220, dark_factor)))
-                scaled.blit(dark_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                    # Apply per-column distortion from the wobble table
+                    if len(self._vanish_distortion) > 0 and src_w > 10:
+                        # Create a copy to apply column distortion
+                        distorted = pygame.Surface(dest_surface.get_size(), pygame.SRCALPHA)
+                        col_w = max(1, src_w // len(self._vanish_distortion))
+                        for i, offset in enumerate(self._vanish_distortion):
+                            col_x = 20 + i * col_w
+                            actual_w = min(col_w, src_w - i * col_w)
+                            if actual_w <= 0 or col_x >= dest_surface.get_width() - 20:
+                                continue
+                            # Clamp subsurface bounds
+                            sub_x = min(col_x, dest_surface.get_width() - actual_w)
+                            sub_h = min(src_h, dest_surface.get_height())
+                            if sub_x >= 0 and actual_w > 0 and sub_h > 0:
+                                strip = dest_surface.subsurface((sub_x, 0, actual_w, sub_h))
+                                distorted.blit(strip, (col_x, int(offset * progress * 4)))
+                        dest_surface = distorted
 
-                # Apply per-column distortion for warping effect
-                if len(self._implosion_distortion) > 0 and new_w > 10:
-                    col_w = max(1, new_w // len(self._implosion_distortion))
-                    dest_surf = pygame.Surface((new_w + 20, new_h + 20), pygame.SRCALPHA)
-                    for i, offset in enumerate(self._implosion_distortion):
-                        col_x = i * col_w
-                        actual_w = min(col_w, new_w - col_x)
-                        if actual_w <= 0 or col_x >= new_w:
-                            continue
-                        strip = scaled.subsurface((col_x, 0, actual_w, new_h))
-                        dest_surf.blit(strip, (col_x + 10, int(offset * progress * 3) + 10))
-                    # Center on implosion center
-                    blit_x = cx - dest_surf.get_width() // 2
-                    blit_y = cy - dest_surf.get_height() // 2
-                    surface.blit(dest_surf, (blit_x + ox, blit_y + oy))
-                else:
-                    # Simple centered implosion
-                    blit_x = cx - new_w // 2
-                    blit_y = cy - new_h // 2
-                    surface.blit(scaled, (blit_x + ox, blit_y + oy))
+                    # Color corruption — patches of wrong colors
+                    if progress > 0.3:
+                        num_patches = int(3 + progress * 8)
+                        for _ in range(num_patches):
+                            patch_w = random.randint(8, 40)
+                            patch_h = random.randint(4, 20)
+                            patch_x = random.randint(0, src_w - patch_w)
+                            patch_y = random.randint(0, src_h - patch_h)
+                            patch_color = random.choice([
+                                (140, 60, 180), (90, 30, 110), (50, 15, 80),
+                                (200, 80, 150), (30, 5, 50), C.CRIMSON, C.YELLOW,
+                            ])
+                            patch_alpha = int(random.uniform(30, 100) * progress)
+                            patch_surf = pygame.Surface((patch_w, patch_h), pygame.SRCALPHA)
+                            patch_surf.fill((*patch_color, patch_alpha))
+                            dest_surface.blit(patch_surf, (20 + patch_x, patch_y))
 
-                # Draw inward-pulling distortion lines (tendril hints)
-                if progress > 0.3:
-                    for _ in range(int(4 * progress)):
-                        angle = random.uniform(0, math.pi * 2)
-                        dist = random.uniform(40, 140) * (1.0 - progress * 0.5)
-                        start_x = cx + math.cos(angle) * dist + ox
-                        start_y = cy + math.sin(angle) * dist + oy
-                        end_x = cx + ox
-                        end_y = cy + oy
-                        line_alpha = int(80 * progress)
-                        # Draw thin tendril line
-                        line_surf = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-                        pygame.draw.line(line_surf, (90, 30, 110, line_alpha),
-                                       (int(start_x), int(start_y)), (int(end_x), int(end_y)), 1)
-                        surface.blit(line_surf, (0, 0))
+                    # Occasional complete row deletion (sprite data dropping out)
+                    if progress > 0.4:
+                        num_drops = int(progress * 5)
+                        for _ in range(num_drops):
+                            drop_y = random.randint(0, src_h - 3)
+                            drop_h = random.randint(2, 8)
+                            # Erase a horizontal strip (make it transparent)
+                            erase_rect = pygame.Rect(20, drop_y, src_w, drop_h)
+                            erase_surf = pygame.Surface((src_w, drop_h), pygame.SRCALPHA)
+                            dest_surface.blit(erase_surf, (20, drop_y))
 
-        elif self._victory_state == "void_flash":
-            # No sprite — void flash renders below
-            pass
+                    # Apply the vanishing opacity
+                    dest_surface.set_alpha(int(self._vanish_opacity))
+                    surface.blit(dest_surface, (sprite_x - 20, sprite_y))
+
+            # Glitch noise particles around the sprite area
+            if self._vanish_progress > 0.3 and random.random() < self._vanish_progress * 0.4:
+                noise_x = sprite_x + random.randint(-10, sprite_w + 10)
+                noise_y = sprite_y + random.randint(-5, int(sprite_y * 0.5))
+                noise_w = random.randint(4, 30)
+                noise_h = random.randint(2, 6)
+                noise_surf = pygame.Surface((noise_w, noise_h), pygame.SRCALPHA)
+                noise_color = random.choice([
+                    C.ELDRITCH_PURPLE, (30, 5, 50), C.CRIMSON, (50, 15, 80),
+                ])
+                noise_alpha = int(random.uniform(40, 120) * self._vanish_progress)
+                noise_surf.fill((*noise_color, noise_alpha))
+                surface.blit(noise_surf, (noise_x + ox, noise_y + oy))
 
         elif self._victory_state == "afterimage":
-            # Burned-in silhouette fading
+            # Burned-in silhouette fading — NO sprite
             if self._afterimage_surface and self._afterimage_alpha > 0:
                 afterimage = self._afterimage_surface.copy()
                 afterimage.set_alpha(self._afterimage_alpha)
                 surface.blit(afterimage, (sprite_x + ox, sprite_y + oy))
 
+        elif self._victory_state == "fade":
+            # Final fade — NO sprite, NO afterimage, just darkness
+            pass
+
         else:
-            # Normal combat sprite
+            # Normal combat sprite (only when _victory_state is None)
             enemy_sprite = self.assets.get_sprite(e.name)
             if enemy_sprite:
                 # Flash overlay when enemy acts
@@ -451,22 +480,6 @@ class CombatRendererMixin:
                     surface.blit(flash, (sprite_x, sprite_y))
                 else:
                     surface.blit(enemy_sprite, (sprite_x, sprite_y))
-
-        # --- Void flash rendering (expanding/contracting black circle) ---
-        if self._victory_state == "void_flash" and self._void_flash_radius > 2:
-            cx, cy = self._implosion_center
-            void_surf = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-            # Draw the void circle
-            pygame.draw.circle(void_surf, (0, 0, 0, self._void_flash_alpha),
-                             (int(cx) + ox, int(cy) + oy), int(self._void_flash_radius))
-            # Draw eldritch ring around the void edge
-            if self._void_flash_radius > 10:
-                ring_alpha = min(200, self._void_flash_alpha)
-                for ring_i in range(3):
-                    ring_r = int(self._void_flash_radius) + ring_i * 3
-                    pygame.draw.circle(void_surf, (140, 60, 180, int(ring_alpha * (1.0 - ring_i * 0.3))),
-                                     (int(cx) + ox, int(cy) + oy), ring_r, 2)
-            surface.blit(void_surf, (0, 0))
 
         # Enemy action floating text — eldritch styled
         if self._enemy_action_text:
@@ -493,7 +506,7 @@ class CombatRendererMixin:
             text_rect = text_surf.get_rect(center=(int(fx) + wave_offset, int(fy)))
             surface.blit(text_surf, text_rect)
 
-        # --- Character sprite (left side) — hidden during implosion and after ---
+        # --- Character sprite (left side) — hidden during glitch_vanish and after ---
         if not self._victory_state or self._victory_state in ("glitch_onset", "reality_break"):
             class_sprite = self.assets.get_class_combat(s.class_id)
             if class_sprite:

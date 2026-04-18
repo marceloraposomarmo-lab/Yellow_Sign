@@ -51,28 +51,24 @@ class CombatScreen(CombatRendererMixin, Screen):
 
         # ─────────────────────────────────────────────────────────────────────────────
         # HORROR DEATH ANIMATION STATE MACHINE
-        # States: None → "glitch_onset" → "reality_break" → "implosion" →
-        #         "void_flash" → "afterimage" → "fade" → done
+        # States: None → "glitch_onset" → "reality_break" → "glitch_vanish" →
+        #         "afterimage" → "fade" → done
         # ─────────────────────────────────────────────────────────────────────────────
         self._victory_state = None
         self._victory_timer = 0.0
         self._victory_is_boss = False
 
         # Glitch phase data
-        self._glitch_intensity = 0.0       # 0-1, ramps up over glitch phases
+        self._glitch_intensity = 0.0       # 0-1+, ramps up over glitch phases
         self._glitch_name_corrupted = ""   # Corrupted enemy name string
         self._glitch_name_timer = 0.0      # Timer for name scramble refresh
         self._glitch_bar_snap = False      # True when HP bar snaps to 0
         self._glitch_bar_flicker = 0.0     # HP bar flicker offset (random per frame)
 
-        # Implosion phase data
-        self._implosion_progress = 0.0     # 0-1, how compressed the sprite is
-        self._implosion_center = (0, 0)    # Center point the sprite implodes toward
-        self._implosion_distortion = []    # Per-column distortion offsets
-
-        # Void flash data
-        self._void_flash_radius = 0.0      # Expanding circle radius
-        self._void_flash_alpha = 0         # Alpha of the void circle
+        # Glitch vanish phase data
+        self._vanish_progress = 0.0        # 0-1, how far into vanish we are
+        self._vanish_opacity = 255.0       # Sprite opacity, drops to 0 during vanish
+        self._vanish_distortion = []       # Per-column distortion offsets
 
         # Afterimage data
         self._afterimage_alpha = 0         # Fading silhouette alpha
@@ -314,96 +310,61 @@ class CombatScreen(CombatRendererMixin, Screen):
                     self._glitch_bar_snap = True
                     # Big screen crack shake
                     self.trigger_shake(intensity=14, duration=0.3)
-                    self._victory_state = "implosion"
+                    self._victory_state = "glitch_vanish"
                     self._victory_timer = 0.0
-                    # Initialize implosion center
-                    sprite_w = 240
-                    sprite_x = SCREEN_W - sprite_w - 40
-                    sprite_y = 202
-                    enemy_sprite = self.assets.get_sprite(
-                        self.game.state.combat.enemy.name if self.game.state.combat else "")
-                    if enemy_sprite:
-                        sw, sh = enemy_sprite.get_size()
-                        if sw != sprite_w:
-                            sh = int(sh * sprite_w / sw)
-                        self._implosion_center = (
-                            sprite_x + sprite_w // 2,
-                            sprite_y + sh // 2
-                        )
-                    else:
-                        self._implosion_center = (sprite_x + 120, sprite_y + 120)
                     # Build distortion table for per-column offsets
-                    self._implosion_distortion = [
+                    sprite_w = 240
+                    self._vanish_distortion = [
                         random.uniform(-3, 3) for _ in range(sprite_w // 4)
                     ]
+                    self._vanish_opacity = 255.0
 
-            elif self._victory_state == "implosion":
-                # Phase 3: Enemy sprite compresses/distorts toward center (1.0s)
-                self._implosion_progress = min(1.0, self._victory_timer / 1.0)
-                # Shake intensifies as implosion progresses
-                if random.random() < 0.08 * self._implosion_progress:
-                    self.trigger_shake(intensity=int(3 + 8 * self._implosion_progress), duration=0.05)
-                # Spawn inward-pulling eldritch tendrils (particles that move toward center)
-                if random.random() < 0.25:
-                    cx, cy = self._implosion_center
-                    angle = random.uniform(0, math.pi * 2)
-                    dist = random.uniform(80, 160)
-                    px = cx + math.cos(angle) * dist
-                    py = cy + math.sin(angle) * dist
-                    # Particle velocity points INWARD toward center
-                    dx, dy = cx - px, cy - py
-                    d = max(1, (dx*dx + dy*dy) ** 0.5)
-                    speed = random.uniform(1.5, 3.0)
+            elif self._victory_state == "glitch_vanish":
+                # Phase 3: Sprite glitches harder and harder, then vanishes (1.3s)
+                vanish_dur = 1.3
+                self._vanish_progress = min(1.0, self._victory_timer / vanish_dur)
+                # Glitch intensity keeps climbing past 1.0 for extreme effects
+                self._glitch_intensity = 1.0 + self._vanish_progress * 0.8
+                self._glitch_bar_flicker = random.uniform(-30, 30) * self._glitch_intensity
+                # Opacity drops: stays high for first 40%, then plummets
+                if self._vanish_progress < 0.4:
+                    # Still mostly visible, just heavy glitch
+                    self._vanish_opacity = 255.0
+                else:
+                    # Rapid opacity drop — sprite is dying
+                    fade_t = (self._vanish_progress - 0.4) / 0.6  # 0→1
+                    self._vanish_opacity = max(0, 255.0 * (1.0 - ease_in_cubic(fade_t)))
+                # Update distortion table — gets more extreme
+                for i in range(len(self._vanish_distortion)):
+                    self._vanish_distortion[i] += random.uniform(-4, 4) * self._vanish_progress
+                    self._vanish_distortion[i] *= 0.85  # damping
+                # Intense screen jitter
+                if random.random() < 0.12 * self._vanish_progress:
+                    self.trigger_shake(intensity=int(4 + 10 * self._vanish_progress), duration=0.05)
+                # Glitch particles — more and more as vanish progresses
+                if random.random() < 0.2 + self._vanish_progress * 0.3:
                     self.particles.append({
-                        "x": px, "y": py,
-                        "vx": (dx / d) * speed, "vy": (dy / d) * speed,
-                        "size": random.randint(2, 5),
+                        "x": random.uniform(820, 1100), "y": random.uniform(160, 320),
+                        "vx": random.uniform(-3, 3), "vy": random.uniform(-2, 2),
+                        "size": random.randint(1, 5),
                         "color": random.choice([
-                            (140, 60, 180), (90, 30, 110), (50, 15, 80),
-                            (200, 80, 150), (30, 5, 50),
+                            C.ELDRITCH_PURPLE, C.CRIMSON, C.YELLOW,
+                            (90, 30, 110), (50, 15, 80), (30, 5, 50),
                         ]),
-                        "alpha": random.randint(80, 180),
-                        "life": random.uniform(0.4, 1.0),
+                        "alpha": random.randint(100, 220),
+                        "life": random.uniform(0.2, 0.8),
                     })
-                # Update distortion table (wobble)
-                for i in range(len(self._implosion_distortion)):
-                    self._implosion_distortion[i] += random.uniform(-2, 2) * self._implosion_progress
-                    self._implosion_distortion[i] *= 0.9  # damping
 
-                if self._victory_timer >= 1.0:
+                if self._victory_timer >= vanish_dur:
                     # Cache the afterimage silhouette before sprite is gone
                     self._build_afterimage()
-                    self._victory_state = "void_flash"
-                    self._victory_timer = 0.0
-                    self._void_flash_radius = 0.0
-                    self._void_flash_alpha = 0
-
-            elif self._victory_state == "void_flash":
-                # Phase 4: Circle of absolute black expands then snaps shut (0.3s)
-                flash_dur = 0.3
-                t = min(1.0, self._victory_timer / flash_dur)
-                if t < 0.5:
-                    # Expand phase: black circle grows from center
-                    self._void_flash_radius = ease_out_cubic(t * 2) * 200
-                    self._void_flash_alpha = 255
-                else:
-                    # Snap-shut phase: circle contracts rapidly
-                    snap_t = (t - 0.5) * 2  # 0→1
-                    self._void_flash_radius = max(0, (1.0 - ease_in_cubic(snap_t)) * 200)
-                    self._void_flash_alpha = int(255 * (1.0 - snap_t))
-                # Silence shake at start of void flash
-                if self._victory_timer < 0.05:
-                    self.trigger_shake(intensity=20, duration=0.15)
-
-                if self._victory_timer >= flash_dur:
-                    self._void_flash_radius = 0
-                    self._void_flash_alpha = 0
+                    self._vanish_opacity = 0
                     self._victory_state = "afterimage"
                     self._victory_timer = 0.0
                     self._afterimage_alpha = 180
 
             elif self._victory_state == "afterimage":
-                # Phase 5: Burned-in silhouette fades, wisps drift (1.2s)
+                # Phase 4: Burned-in silhouette fades, wisps drift (1.2s)
                 # Fade the afterimage
                 fade_dur = 1.2
                 t = min(1.0, self._victory_timer / fade_dur)
@@ -412,7 +373,10 @@ class CombatScreen(CombatRendererMixin, Screen):
                 self._victory_vignette_intensity = min(0.7, t * 0.7)
                 # Drift wisps upward from where the enemy was
                 if random.random() < 0.2:
-                    cx, cy = self._implosion_center
+                    # Use the enemy sprite area center for wisps
+                    sprite_w = 240
+                    cx = SCREEN_W - sprite_w - 40 + sprite_w // 2
+                    cy = 202 + 120  # Approximate center of sprite area
                     self.particles.append({
                         "x": cx + random.uniform(-40, 40),
                         "y": cy + random.uniform(-20, 20),
@@ -440,7 +404,7 @@ class CombatScreen(CombatRendererMixin, Screen):
                     self._victory_timer = 0.0
 
             elif self._victory_state == "fade":
-                # Phase 6: Vignette tightens, screen darkens, transition (0.8s)
+                # Phase 5: Vignette tightens, screen darkens, transition (0.8s)
                 fade_dur = 0.8
                 t = min(1.0, self._victory_timer / fade_dur)
                 self._victory_fade_alpha = min(255, int(255 * ease_in_cubic(t)))
@@ -705,11 +669,9 @@ class CombatScreen(CombatRendererMixin, Screen):
         self._glitch_name_timer = 0.0
         self._glitch_bar_snap = False
         self._glitch_bar_flicker = 0.0
-        self._implosion_progress = 0.0
-        self._implosion_center = (0, 0)
-        self._implosion_distortion = []
-        self._void_flash_radius = 0.0
-        self._void_flash_alpha = 0
+        self._vanish_progress = 0.0
+        self._vanish_opacity = 255.0
+        self._vanish_distortion = []
         self._afterimage_alpha = 0
         self._afterimage_surface = None
         # Clear any stale logged flag
@@ -798,10 +760,10 @@ class CombatScreen(CombatRendererMixin, Screen):
         c = s.combat
         if not c:
             return
-        # Safety guard: only finish once
+        # Safety guard: only finish once — keep _victory_state set until AFTER
+        # the screen switch to prevent the enemy sprite from flashing back
         if not self._victory_state:
             return
-        self._victory_state = None
 
         s.kills += 1
         xp_g = XP_BASE + s.floor * XP_PER_FLOOR + (XP_BOSS_BONUS if c.is_boss else 0)
@@ -816,7 +778,9 @@ class CombatScreen(CombatRendererMixin, Screen):
             "victory": True, "xp": xp_g, "gold": gold_g,
             "loot": loot, "is_boss": c.is_boss, "leveled": leveled,
         }
+        # Clear combat FIRST (so draw() early-returns), then victory state
         s.combat = None
+        self._victory_state = None
         if leveled:
             self.game.switch_screen("levelup")
         else:
