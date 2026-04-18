@@ -50,11 +50,16 @@ data/                   Game content (data-driven)
   content.py            Misc game content
   json/                 events.json, traps.json, narratives.json, paths.json
 
-screens/                17 screen modules (one per screen)
+screens/                17 screen modules (combat split into package)
   base.py               Screen base class (hover, transitions)
-  title.py, class_select.py, explore.py, combat.py (~900 lines)
-  inventory.py, shop.py, rest.py, loot.py, event.py, trap_result.py
-  combat_result.py, levelup.py, gameover.py, victory.py, stats.py, save.py
+  title.py, class_select.py, explore.py, inventory.py, shop.py, rest.py
+  combat/               Combat screen package (split from former ~1,415-line monolith)
+    __init__.py         Re-exports CombatScreen for backward compatibility
+    particles.py        ParticleType class + PARTICLE_TYPES registry + factory functions
+    screen.py           CombatScreen class — all logic (input, combat, victory, update)
+    renderer.py         CombatRendererMixin — all draw methods (tooltips, intent, main draw)
+  loot.py, event.py, trap_result.py, combat_result.py, levelup.py
+  gameover.py, victory.py, stats.py, save.py
 
 tests/
   test_combat.py        19 suites, 271 assertions — covers all 5 classes, damage, buffs, debuffs, cooldowns, enemy AI, boss phases, flee, items, madness
@@ -234,7 +239,7 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 
 #### Code Refactoring Opportunities
 - [x] ~~Split `engine/skills.py` (~1,347 lines) into `engine/skills/` package~~ — Done! Now 6 files, largest is buff.py at 456 lines
-- [ ] Split `screens/combat.py` (~900 lines) into `screens/combat/` package (screen.py, renderer.py, input_handler.py, animations.py)
+- [x] ~~Split `screens/combat.py` (~1,415 lines) into `screens/combat/` package~~ — Done! Now 4 files, largest is screen.py at 694 lines
 - [ ] Add TypedDict definitions for rarity data, event/trap structures (fix 17 mypy warnings)
 - [ ] Add input validation in skill handlers (None checks before registry lookup with logging)
 - [ ] Extract remaining magic numbers to `data/constants.py`
@@ -276,4 +281,4 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 
 ---
 
-*Last updated: 2026-04-19 (Skills refactoring commit)*
+*Last updated: 2026-04-19 (Combat screen refactoring commit)*
