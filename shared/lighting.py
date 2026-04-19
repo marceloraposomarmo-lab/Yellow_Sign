@@ -431,7 +431,7 @@ class LightingSystem:
         Uses a large elliptical gradient to darken screen edges more than
         the center. The darkness is tinted with a faint sickly purple-black,
         like the air itself is rotting in the depths of the Spiral.
-        "
+        """
         darkness = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
         num_rings = 30
         max_rx = SCREEN_W // 2 + 100
