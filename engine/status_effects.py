@@ -100,35 +100,32 @@ def process_status_effects(target, is_player: bool, state: GameState) -> List[Tu
 
 
 def process_player_status_effects(state: GameState) -> List[Tuple[str, str]]:
-    """Process burning/poison/bleeding on the player."""
-    logs: List[Tuple[str, str]] = []
-    to_remove: List[StatusEffect] = []
-    for st in state.statuses:
-        if st.type == "burning":
-            d = int(state.max_hp * BURNING_HP_PCT)
-            state.hp = max(0, state.hp - d)
-            logs.append((f"You burn for {d}!", "damage"))
-        elif st.type == "poisoned":
-            stacks = getattr(st, "stacks", 1)
-            d = int(state.max_hp * POISON_HP_PCT * stacks)
-            state.hp = max(0, state.hp - d)
-            logs.append((f"Poison deals {d}! ({stacks} stacks)", "damage"))
-        elif st.type == "bleeding":
-            d = int(state.max_hp * BLEEDING_HP_PCT)
-            state.hp = max(0, state.hp - d)
-            logs.append((f"You bleed for {d}!", "damage"))
-        st.duration -= 1
-        if st.duration <= 0:
-            to_remove.append(st)
-    for st in to_remove:
-        state.statuses.remove(st)
-        logs.append((f"{st.type} wears off.", "info"))
-    return logs
+    """Process burning/poison/bleeding on the player. Thin wrapper over process_status_effects."""
+    return process_status_effects(state, is_player=True, state=state)
 
 
 # ═══════════════════════════════════════════
 # BUFF MANAGEMENT
 # ═══════════════════════════════════════════
+
+
+# Buff keys that modify temporary stats. When these buffs expire,
+# the corresponding stat bonuses are removed from state.temp_stats.
+STAT_BUFF_KEYS: dict = {
+    "permIntWis": ["int", "wis"],
+    "permAtk2": ["str"],
+    "permWisStr": ["wis", "str"],
+    "permAgiLuk": ["agi", "luck"],
+    "permAll1": ["int", "str", "agi", "wis", "luck"],
+    "thickSkull": ["str", "wis"],
+    "perseverance": ["wis", "str"],
+    "shadowBless": ["agi", "luck"],
+    "randStat2": ["int", "str", "agi", "wis", "luck"],
+    "pallidMask": ["int", "str", "agi", "wis", "luck"],
+    "dreadnought": ["str"],
+    "innerFire": ["wis", "luck"],
+    "luckyDodge": ["luck"],
+}
 
 
 def tick_player_buffs(state: GameState) -> List[Tuple[str, str]]:
@@ -155,22 +152,6 @@ def tick_player_buffs(state: GameState) -> List[Tuple[str, str]]:
             logs.append((f"Oath heals {h} HP.", "heal"))
         if state.buffs[key] <= 0:
             to_remove.append(key)
-
-    STAT_BUFF_KEYS = {
-        "permIntWis": ["int", "wis"],
-        "permAtk2": ["str"],
-        "permWisStr": ["wis", "str"],
-        "permAgiLuk": ["agi", "luck"],
-        "permAll1": ["int", "str", "agi", "wis", "luck"],
-        "thickSkull": ["str", "wis"],
-        "perseverance": ["wis", "str"],
-        "shadowBless": ["agi", "luck"],
-        "randStat2": ["int", "str", "agi", "wis", "luck"],
-        "pallidMask": ["int", "str", "agi", "wis", "luck"],
-        "dreadnought": ["str"],
-        "innerFire": ["wis", "luck"],
-        "luckyDodge": ["luck"],
-    }
 
     for key in to_remove:
         del state.buffs[key]

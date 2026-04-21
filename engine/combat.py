@@ -57,7 +57,12 @@ class EnemyData(TypedDict, total=False):
     level_range: List[int]
 
 
+# Imports from engine submodules — also re-exported for backward compatibility.
+# Tests and engine/__init__.py import these names from engine.combat.
 from engine.damage import (
+    _base_damage,
+    _get_buff_defense_bonus,
+    _get_buff_evasion_bonus,
     calc_player_damage,
     calc_preview_damage,
     apply_damage_to_enemy,
@@ -70,21 +75,6 @@ from engine.status_effects import (
     process_player_status_effects,
     tick_player_buffs,
 )
-
-# Re-export for backward compatibility (engine/__init__.py, tests, and skills.py import from here)
-from engine.damage import _base_damage, _get_buff_defense_bonus, _get_buff_evasion_bonus
-from engine.damage import (
-    calc_player_damage,
-    calc_preview_damage,
-    apply_damage_to_enemy,
-    apply_damage_to_player,
-)
-from engine.status_effects import (
-    tick_player_buffs,
-    process_status_effects,
-    process_player_status_effects,
-)
-from engine.status_effects import apply_status_player, apply_status_effect_on_player
 
 # ═══════════════════════════════════════════
 # COMBAT LIFECYCLE
@@ -168,6 +158,8 @@ def enemy_turn(state: GameState) -> List[Tuple[str, str]]:
 
     if stype in ("physical", "magic"):
         dmg = int(e.atk * spower * (ENEMY_VAR_LOW + random.random() * ENEMY_VAR_RANGE))
+        # Debuffs on the *enemy* reduce its outgoing damage.
+        # has_status(e, ...) checks the enemy's own status list.
         if stype == "physical" and has_status(e, "freezing"):
             dmg = int(dmg * FREEZING_PHYS_MULT)
         if stype == "magic" and has_status(e, "petrified"):
@@ -187,6 +179,7 @@ def enemy_turn(state: GameState) -> List[Tuple[str, str]]:
 
     elif stype in ("physical_debuff", "magic_debuff"):
         dmg = int(e.atk * spower * (ENEMY_VAR_LOW + random.random() * ENEMY_VAR_RANGE))
+        # Debuffs on the *enemy* reduce its outgoing attack damage.
         if "physical" in stype and has_status(e, "freezing"):
             dmg = int(dmg * FREEZING_PHYS_MULT)
         if "magic" in stype and has_status(e, "petrified"):

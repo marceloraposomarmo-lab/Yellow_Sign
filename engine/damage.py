@@ -77,7 +77,8 @@ def _base_damage(state: GameState, skill: Skill) -> float:
         # not reach _base_damage during normal execution, but we guard here.
         bd = 0
     elif skill.type == "curse":
-        bd = (5 + sv * 1.5) * skill.power + state.shield if skill.consume_shield else (5 + sv * 1.5) * skill.power
+        base = (5 + sv * 1.5) * skill.power
+        bd = base + state.shield if skill.consume_shield else base
     elif skill.type == "ultimate":
         bd = (5 + sv * 1.5) * skill.power
         if skill.stat2_mult:

@@ -9,7 +9,16 @@ from typing import List, Dict, Any, Optional
 
 from engine import GameState, Skill, Item, StatusEffect
 
-SAVE_DIR = os.path.join(os.path.dirname(__file__), "saves")
+# Save directory: prefer platform-specific user data dir when available,
+# falling back to a "saves" folder next to this file.
+try:
+    import platformdirs
+
+    _BASE_DIR = platformdirs.user_data_dir("yellow_sign", ensure_exists=True)
+except ImportError:
+    _BASE_DIR = os.path.dirname(__file__)
+
+SAVE_DIR = os.path.join(_BASE_DIR, "saves")
 SAVE_VERSION = 2
 
 
