@@ -469,6 +469,7 @@ class CombatRendererMixin:
                             if sub_x >= 0 and actual_w > 0 and sub_h > 0:
                                 strip = dest_surface.subsurface((sub_x, 0, actual_w, sub_h))
                                 distorted.blit(strip, (col_x, int(offset * progress * 4)))
+                        surface_pool.release(dest_surface)  # Release original before reassign
                         dest_surface = distorted
 
                     # Color corruption — patches of wrong colors

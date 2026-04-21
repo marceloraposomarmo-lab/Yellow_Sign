@@ -647,30 +647,54 @@ _HUD_BG_KEY = ("hud_bg", SCREEN_W, 120)
 def generate_parchment_texture(width, height):
     """Generate a panel texture by tiling the master obsidian tile, then adding per-panel effects.
 
-    Results are cached by (width, height) so that the expensive random-symbol
-    generation, edge glow, and vignette drawing only happen once per unique
-    panel size.  Subsequent calls return the cached surface instantly.
+    The expensive base (tiled obsidian + edge glow + vignette) is cached by
+    (width, height).  Per-frame eldritch symbols are drawn on a copy so
+    they shimmer naturally instead of being frozen in place.
 
     Callers that modify the returned surface with ``set_alpha()`` are safe:
-    the cache resets per-surface alpha before each return, and pixel data
-    is never mutated.
+    the base cache is never mutated, and the returned copy is a fresh surface.
     """
-    cache_key = ("parchment_tex", width, height)
-    cached = render_cache.get(cache_key)
-    if cached is not None:
-        cached.set_alpha(None)  # Reset any per-surface alpha from previous caller
-        return cached
+    # ── Base texture (cached): tile + glow + vignette ──
+    base_key = ("parchment_base", width, height)
+    base = render_cache.get(base_key)
+    if base is None:
+        tile = _generate_obsidian_tile()
+        tile_w, tile_h = tile.get_size()
 
-    tile = _generate_obsidian_tile()
-    tile_w, tile_h = tile.get_size()
+        base = pygame.Surface((width, height), pygame.SRCALPHA)
 
-    surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        for ty in range(0, height, tile_h):
+            for tx in range(0, width, tile_w):
+                base.blit(tile, (tx, ty))
 
-    for ty in range(0, height, tile_h):
-        for tx in range(0, width, tile_w):
-            surf.blit(tile, (tx, ty))
+        # Edge glow
+        glow = pygame.Surface((width, height), pygame.SRCALPHA)
+        for i in range(25):
+            alpha = int(35 * (1 - i / 25))
+            edge_c = C.OBSIDIAN_GLOW
+            pygame.draw.line(glow, (*edge_c, alpha), (0, i), (width, i))
+            pygame.draw.line(glow, (*edge_c, alpha), (0, height - 1 - i), (width, height - 1 - i))
+        for i in range(15):
+            alpha = int(25 * (1 - i / 15))
+            edge_c = C.OBSIDIAN_GLOW
+            pygame.draw.line(glow, (*edge_c, alpha), (i, 0), (i, height))
+            pygame.draw.line(glow, (*edge_c, alpha), (width - 1 - i, 0), (width - 1 - i, height))
+        base.blit(glow, (0, 0))
 
-    # Per-panel eldritch symbols
+        # Dark vignette
+        vig = pygame.Surface((width, height), pygame.SRCALPHA)
+        for i in range(15):
+            alpha = int(50 * (1 - i / 15))
+            pygame.draw.line(vig, (0, 0, 0, alpha), (0, i), (width, i))
+            pygame.draw.line(vig, (0, 0, 0, alpha), (0, height - 1 - i), (width, height - 1 - i))
+        base.blit(vig, (0, 0))
+
+        render_cache.put(base_key, base)
+
+    # ── Per-frame copy with fresh random symbols ──
+    surf = base.copy()
+
+    # Per-panel eldritch symbols (random positions each frame for subtle shimmer)
     if width > 200 and height > 150:
         _draw_yellow_sign(
             surf,
@@ -694,29 +718,6 @@ def generate_parchment_texture(width, height):
             else:
                 _draw_alchemical_circle(surf, sx, sy, random.randint(10, 16), alpha=8)
 
-    # Edge glow
-    glow = pygame.Surface((width, height), pygame.SRCALPHA)
-    for i in range(25):
-        alpha = int(35 * (1 - i / 25))
-        edge_c = C.OBSIDIAN_GLOW
-        pygame.draw.line(glow, (*edge_c, alpha), (0, i), (width, i))
-        pygame.draw.line(glow, (*edge_c, alpha), (0, height - 1 - i), (width, height - 1 - i))
-    for i in range(15):
-        alpha = int(25 * (1 - i / 15))
-        edge_c = C.OBSIDIAN_GLOW
-        pygame.draw.line(glow, (*edge_c, alpha), (i, 0), (i, height))
-        pygame.draw.line(glow, (*edge_c, alpha), (width - 1 - i, 0), (width - 1 - i, height))
-    surf.blit(glow, (0, 0))
-
-    # Dark vignette
-    vig = pygame.Surface((width, height), pygame.SRCALPHA)
-    for i in range(15):
-        alpha = int(50 * (1 - i / 15))
-        pygame.draw.line(vig, (0, 0, 0, alpha), (0, i), (width, i))
-        pygame.draw.line(vig, (0, 0, 0, alpha), (0, height - 1 - i), (width, height - 1 - i))
-    surf.blit(vig, (0, 0))
-
-    render_cache.put(cache_key, surf)
     return surf
 
 

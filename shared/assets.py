@@ -17,7 +17,6 @@ from shared.constants import (
 )
 from data import ENEMY_SPRITES, STAT_ICONS
 from shared.logger import get_logger
-from shared.surface_pool import render_cache
 
 logger = get_logger("assets")
 
