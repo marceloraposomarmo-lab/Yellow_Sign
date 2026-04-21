@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 
 
 class GameOverScreen(Screen):
@@ -40,14 +41,14 @@ class GameOverScreen(Screen):
         self.update_hover(event, btns)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.restart_btn and self.restart_btn.collidepoint(event.pos):
-                self.game.switch_screen("class_select")
+                self.game.switch_screen(ScreenName.CLASS_SELECT)
             elif self.menu_btn and self.menu_btn.collidepoint(event.pos):
-                self.game.switch_screen("title")
+                self.game.switch_screen(ScreenName.TITLE)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                self.game.switch_screen("class_select")
+                self.game.switch_screen(ScreenName.CLASS_SELECT)
             elif event.key == pygame.K_q:
-                self.game.switch_screen("title")
+                self.game.switch_screen(ScreenName.TITLE)
 
     def draw(self, surface):
         # The Game_Over_Screen background is already drawn by main loop

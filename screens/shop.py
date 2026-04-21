@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import RARITY_DATA
 from engine import generate_shop, buy_shop_item, advance_floor
 
@@ -46,9 +47,9 @@ class ShopScreen(Screen):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if advance_floor(s):
-                    self.game.switch_screen("victory")
+                    self.game.switch_screen(ScreenName.VICTORY)
                 else:
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.buy_buttons):
                 if btn.collidepoint(event.pos) and i < len(self.game.shop_items):
@@ -58,9 +59,9 @@ class ShopScreen(Screen):
                     self.game.shop_msg_timer = 1.5
             if self.leave_btn and self.leave_btn.collidepoint(event.pos):
                 if advance_floor(s):
-                    self.game.switch_screen("victory")
+                    self.game.switch_screen(ScreenName.VICTORY)
                 else:
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
 
     def draw(self, surface):
         s = self.game.state

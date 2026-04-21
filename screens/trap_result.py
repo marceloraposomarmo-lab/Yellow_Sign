@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 
 
 class TrapResultScreen(Screen):
@@ -35,7 +36,7 @@ class TrapResultScreen(Screen):
         if event.type == pygame.KEYDOWN or (
             event.type == pygame.MOUSEBUTTONDOWN and self.continue_btn and self.continue_btn.collidepoint(event.pos)
         ):
-            self.game.switch_screen("explore")
+            self.game.switch_screen(ScreenName.EXPLORE)
 
     def draw(self, surface):
         panel_w, panel_h = 500, 180

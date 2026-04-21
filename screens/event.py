@@ -25,6 +25,7 @@ from shared import (
 )
 import random
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import EVENTS
 from engine import resolve_event
 
@@ -67,9 +68,9 @@ class EventScreen(Screen):
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
                 if s.hp <= 0:
                     self.game.gameover_msg = "The asylum claims another victim."
-                    self.game.switch_screen("gameover")
+                    self.game.switch_screen(ScreenName.GAMEOVER)
                 else:
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
             return
 
         # Allow skipping typewriter animation with any input

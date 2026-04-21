@@ -24,6 +24,7 @@ from shared import (
 )
 import random
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import RARITY_DATA
 from engine import generate_item
 
@@ -65,10 +66,10 @@ class LootScreen(Screen):
                         prev = s.equip_item(self.items[i])
                         if prev:
                             s.inventory.append(prev)
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
                     return
             if self.leave_btn and self.leave_btn.collidepoint(event.pos):
-                self.game.switch_screen("explore")
+                self.game.switch_screen(ScreenName.EXPLORE)
 
     def draw(self, surface):
         # Dynamic panel height based on actual button positions

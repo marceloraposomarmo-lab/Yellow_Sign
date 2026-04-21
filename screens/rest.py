@@ -24,6 +24,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from engine import advance_floor
 
 
@@ -81,9 +82,9 @@ class RestScreen(Screen):
             self.result_timer -= dt
             if self.result_timer <= 0:
                 if advance_floor(self.game.state):
-                    self.game.switch_screen("victory")
+                    self.game.switch_screen(ScreenName.VICTORY)
                 else:
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
 
     def draw(self, surface):
         draw_hud(surface, self.game.state, self.assets)

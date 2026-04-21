@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import RARITY_DATA
 from engine import advance_floor
 
@@ -43,11 +44,11 @@ class CombatResultScreen(Screen):
         if self.chosen:
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
                 if r["is_boss"]:
-                    self.game.switch_screen("victory")
+                    self.game.switch_screen(ScreenName.VICTORY)
                 elif advance_floor(s):
-                    self.game.switch_screen("victory")
+                    self.game.switch_screen(ScreenName.VICTORY)
                 else:
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
             return
 
         btns = []

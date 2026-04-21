@@ -25,6 +25,7 @@ from shared import (
     CLASS_PRIMARY_STAT,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import CLASSES
 from engine import GameState
 
@@ -68,13 +69,13 @@ class ClassSelectScreen(Screen):
             elif event.key == pygame.K_RETURN:
                 self._pick_class()
             elif event.key == pygame.K_ESCAPE:
-                self.game.switch_screen("title")
+                self.game.switch_screen(ScreenName.TITLE)
 
     def _pick_class(self):
         state = GameState()
         state.init_from_class(self.class_ids[self.selected])
         self.game.state = state
-        self.game.switch_screen("explore")
+        self.game.switch_screen(ScreenName.EXPLORE)
 
     def _draw_ability_tooltip(self, surface, formula, btn_rect):
         """Draw a tooltip popup above an ability button showing its damage formula."""

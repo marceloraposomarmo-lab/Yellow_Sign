@@ -1,4 +1,5 @@
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from screens.title import TitleScreen
 from screens.class_select import ClassSelectScreen
 from screens.explore import ExploreScreen

@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 
 
 class InventoryScreen(Screen):
@@ -30,14 +31,14 @@ class InventoryScreen(Screen):
         super().__init__(game)
         self.back_btn = None
         self.item_buttons = []
-        self.prev_screen = "explore"
+        self.prev_screen = ScreenName.EXPLORE
 
     def enter(self):
         # Read where we came from (set by switch_screen before enter() is called)
-        self.prev_screen = getattr(self.game, "_prev_screen_name", "explore")
+        self.prev_screen = getattr(self.game, "_prev_screen_name", ScreenName.EXPLORE)
         # If we were just in combat, go back to combat
         if self.game.state and self.game.state.combat:
-            self.prev_screen = "combat"
+            self.prev_screen = ScreenName.COMBAT
 
     def handle_event(self, event):
         s = self.game.state

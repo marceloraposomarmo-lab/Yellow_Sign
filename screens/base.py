@@ -22,8 +22,6 @@ from shared import (
     draw_text_wrapped_glow,
     draw_text_fitted_glow,
 )
-
-
 class Screen:
     def __init__(self, game):
         self.game = game

@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import MAX_ACTIVE_SKILLS
 
 
@@ -50,7 +51,7 @@ class LevelUpScreen(Screen):
         s = self.game.state
         if not s.pending_levelup_skills:
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
-                self.game.switch_screen("explore")
+                self.game.switch_screen(ScreenName.EXPLORE)
             return
 
         if self.replace_mode:
@@ -90,7 +91,7 @@ class LevelUpScreen(Screen):
                     self._pick_skill(i)
             if self.skip_btn and self.skip_btn.collidepoint(event.pos):
                 s.pending_levelup_skills = []
-                self.game.switch_screen("explore")
+                self.game.switch_screen(ScreenName.EXPLORE)
         elif event.type == pygame.KEYDOWN:
             if pygame.K_1 <= event.key <= pygame.K_9:
                 idx = event.key - pygame.K_1
@@ -98,7 +99,7 @@ class LevelUpScreen(Screen):
                     self._pick_skill(idx)
                 elif idx == len(s.pending_levelup_skills):
                     s.pending_levelup_skills = []
-                    self.game.switch_screen("explore")
+                    self.game.switch_screen(ScreenName.EXPLORE)
 
     def _pick_skill(self, idx):
         s = self.game.state
@@ -114,7 +115,7 @@ class LevelUpScreen(Screen):
         else:
             s.active_skills.append(chosen)
             s.pending_levelup_skills = []
-            self.game.switch_screen("explore")
+            self.game.switch_screen(ScreenName.EXPLORE)
 
     def _draw_skill_tooltip(self, surface, sk, btn_rect):
         """Draw a popup tooltip showing skill description and formula."""

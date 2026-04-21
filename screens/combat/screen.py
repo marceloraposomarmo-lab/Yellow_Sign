@@ -29,6 +29,7 @@ from shared import (
 )
 from shared.rendering import ease_out_cubic, ease_in_cubic, ease_in_quad
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from screens.combat.particles import ParticleType, PARTICLE_TYPES, create_particle, create_burst
 from screens.combat.renderer import CombatRendererMixin
 from engine import (
@@ -571,9 +572,9 @@ class CombatScreen(CombatRendererMixin, Screen):
                     if name == "run":
                         self._try_run()
                     elif name == "inventory":
-                        self.game.switch_screen("inventory")
+                        self.game.switch_screen(ScreenName.INVENTORY)
                     elif name == "save":
-                        self.game.switch_screen("save")
+                        self.game.switch_screen(ScreenName.SAVE)
         elif event.type == pygame.KEYDOWN:
             if pygame.K_1 <= event.key <= pygame.K_9:
                 idx = event.key - pygame.K_1
@@ -582,9 +583,9 @@ class CombatScreen(CombatRendererMixin, Screen):
             elif event.key == pygame.K_r:
                 self._try_run()
             elif event.key == pygame.K_i:
-                self.game.switch_screen("inventory")
+                self.game.switch_screen(ScreenName.INVENTORY)
             elif event.key == pygame.K_s:
-                self.game.switch_screen("save")
+                self.game.switch_screen(ScreenName.SAVE)
 
     def _use_skill(self, idx):
         s = self.game.state
@@ -702,7 +703,7 @@ class CombatScreen(CombatRendererMixin, Screen):
         if combat_run_attempt(s):
             s.combat = None
             advance_floor(s)
-            self.game.switch_screen("explore")
+            self.game.switch_screen(ScreenName.EXPLORE)
         else:
             self.turn_message = "Failed to escape!"
             self.turn_msg_timer = 1.5
@@ -723,7 +724,7 @@ class CombatScreen(CombatRendererMixin, Screen):
             self.game.gameover_msg = (
                 "Your body crumples. The last thing you see is the Yellow Sign, burning brighter than ever."
             )
-            self.game.switch_screen("gameover")
+            self.game.switch_screen(ScreenName.GAMEOVER)
 
     def _start_victory_animation(self):
         """Begin the multi-phase horror death animation."""
@@ -860,6 +861,6 @@ class CombatScreen(CombatRendererMixin, Screen):
         s.combat = None
         self._victory_state = None
         if leveled:
-            self.game.switch_screen("levelup")
+            self.game.switch_screen(ScreenName.LEVELUP)
         else:
-            self.game.switch_screen("combat_result")
+            self.game.switch_screen(ScreenName.COMBAT_RESULT)

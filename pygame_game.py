@@ -63,6 +63,7 @@ from shared import (
 )
 from screens import (
     Screen,
+    ScreenName,
     TitleScreen,
     ClassSelectScreen,
     ExploreScreen,
@@ -151,27 +152,27 @@ class Game:
         self.trap_name = ""
         self.trap_desc = ""
 
-        # Screens
+        # Screens — keyed by ScreenName enum for type safety
         self.screens = {
-            "title": TitleScreen(self),
-            "class_select": ClassSelectScreen(self),
-            "explore": ExploreScreen(self),
-            "combat": CombatScreen(self),
-            "inventory": InventoryScreen(self),
-            "shop": ShopScreen(self),
-            "rest": RestScreen(self),
-            "loot": LootScreen(self),
-            "event": EventScreen(self),
-            "trap_result": TrapResultScreen(self),
-            "combat_result": CombatResultScreen(self),
-            "levelup": LevelUpScreen(self),
-            "gameover": GameOverScreen(self),
-            "victory": VictoryScreen(self),
-            "save": SaveScreen(self),
-            "load": LoadScreen(self),
-            "stats": StatsScreen(self),
+            ScreenName.TITLE: TitleScreen(self),
+            ScreenName.CLASS_SELECT: ClassSelectScreen(self),
+            ScreenName.EXPLORE: ExploreScreen(self),
+            ScreenName.COMBAT: CombatScreen(self),
+            ScreenName.INVENTORY: InventoryScreen(self),
+            ScreenName.SHOP: ShopScreen(self),
+            ScreenName.REST: RestScreen(self),
+            ScreenName.LOOT: LootScreen(self),
+            ScreenName.EVENT: EventScreen(self),
+            ScreenName.TRAP_RESULT: TrapResultScreen(self),
+            ScreenName.COMBAT_RESULT: CombatResultScreen(self),
+            ScreenName.LEVELUP: LevelUpScreen(self),
+            ScreenName.GAMEOVER: GameOverScreen(self),
+            ScreenName.VICTORY: VictoryScreen(self),
+            ScreenName.SAVE: SaveScreen(self),
+            ScreenName.LOAD: LoadScreen(self),
+            ScreenName.STATS: StatsScreen(self),
         }
-        self.current_screen = self.screens["title"]
+        self.current_screen = self.screens[ScreenName.TITLE]
         self.current_screen.enter()
 
         # Screen transition state (fade-to-black)
@@ -205,7 +206,7 @@ class Game:
     def get_bg(self, screen_name=None):
         """Get context-appropriate background, scaled to current window size."""
         if screen_name is None:
-            screen_name = getattr(self, "_current_screen_name", "title")
+            screen_name = getattr(self, "_current_screen_name", ScreenName.TITLE)
         floor = self.state.floor if self.state else 1
         max_floor = self.state.max_floor if self.state else 20
         bg = self.assets.get_background(floor, max_floor, screen_name)
@@ -216,7 +217,19 @@ class Game:
                 bg = pygame.transform.scale(bg, (sw, sh))
         return bg
 
-    def switch_screen(self, name):
+    def switch_screen(self, name: ScreenName):
+        """Transition to the screen identified by *name* (a ``ScreenName`` enum).
+
+        Parameters
+        ----------
+        name:
+            The target screen.  Must be a :class:`ScreenName` member.
+
+        Raises / guards
+        ---------------
+        If *name* is not registered in ``self.screens`` a warning is logged
+        and the call is silently ignored (preventing crashes from typos).
+        """
         if name not in self.screens:
             logger.warning("Attempted to switch to unknown screen: %s", name)
             return
@@ -227,17 +240,17 @@ class Game:
         self.transition = "fadeOut"
         self.transition_timer = 0
         self._pending_screen = name
-        logger.debug("Screen transition: fadeOut → %s", name)
+        logger.debug("Screen transition: fadeOut → %s", name.value)
 
     def _finish_transition(self, name=None):
         """Immediately complete a pending or forced transition."""
         target = name or self._pending_screen
         if target and target in self.screens:
-            self._prev_screen_name = getattr(self, "_current_screen_name", "title")
+            self._prev_screen_name = getattr(self, "_current_screen_name", ScreenName.TITLE)
             self._current_screen_name = target
             self.current_screen = self.screens[target]
             self.current_screen.enter()
-            logger.debug("Screen transition complete: %s → %s", self._prev_screen_name, target)
+            logger.debug("Screen transition complete: %s → %s", self._prev_screen_name.value, target.value)
         self.transition = None
         self.transition_timer = 0
         self._pending_screen = None

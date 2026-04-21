@@ -24,6 +24,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 
 
 class TitleScreen(Screen):
@@ -90,9 +91,9 @@ class TitleScreen(Screen):
 
     def _select(self, idx):
         if idx == 0:
-            self.game.switch_screen("class_select")
+            self.game.switch_screen(ScreenName.CLASS_SELECT)
         elif idx == 1:
-            self.game.switch_screen("load")
+            self.game.switch_screen(ScreenName.LOAD)
         elif idx == 2:
             self.game.toggle_fullscreen()
         elif idx == 3:

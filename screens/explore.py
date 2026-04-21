@@ -27,6 +27,7 @@ from shared import (
 )
 import random
 from screens.base import Screen
+from screens.screen_enum import ScreenName
 from data import EVENTS, TRAPS, FLOOR_NARRATIVES
 from engine import start_combat, generate_paths, resolve_trap, generate_shop, advance_floor
 
@@ -53,7 +54,7 @@ class ExploreScreen(Screen):
         if is_boss:
             self.paths = []
             start_combat(s, is_boss=True)
-            self.game.switch_screen("combat")
+            self.game.switch_screen(ScreenName.COMBAT)
             return
         # Only generate new paths if we don't have any (don't regenerate on inventory/stats visit)
         if not self.paths:
@@ -137,13 +138,13 @@ class ExploreScreen(Screen):
                 for name, btn in self.cmd_buttons.items():
                     if btn.collidepoint(event.pos):
                         if name == "inventory":
-                            self.game.switch_screen("inventory")
+                            self.game.switch_screen(ScreenName.INVENTORY)
                         elif name == "stats":
-                            self.game.switch_screen("stats")
+                            self.game.switch_screen(ScreenName.STATS)
                         elif name == "save":
-                            self.game.switch_screen("save")
+                            self.game.switch_screen(ScreenName.SAVE)
                         elif name == "menu":
-                            self.game.switch_screen("title")
+                            self.game.switch_screen(ScreenName.TITLE)
         elif event.type == pygame.KEYDOWN:
             # Only allow keyboard interaction when narrative is complete
             if self.narrative_complete:
@@ -152,11 +153,11 @@ class ExploreScreen(Screen):
                     if idx < len(self.paths):
                         self._choose_path(idx)
                 elif event.key == pygame.K_i:
-                    self.game.switch_screen("inventory")
+                    self.game.switch_screen(ScreenName.INVENTORY)
                 elif event.key == pygame.K_t:
-                    self.game.switch_screen("stats")
+                    self.game.switch_screen(ScreenName.STATS)
                 elif event.key == pygame.K_s:
-                    self.game.switch_screen("save")
+                    self.game.switch_screen(ScreenName.SAVE)
 
     def _choose_path(self, idx):
         s = self.game.state
@@ -166,7 +167,7 @@ class ExploreScreen(Screen):
         s.rooms_explored += 1
         if s.add_madness(2):
             self.game.gameover_msg = "Your mind shatters. The Yellow Sign consumes your last rational thought."
-            self.game.switch_screen("gameover")
+            self.game.switch_screen(ScreenName.GAMEOVER)
             return
 
         ptype = path["type"]
@@ -174,24 +175,24 @@ class ExploreScreen(Screen):
             if s.buffs.get("skipCombat", 0) > 0:
                 s.buffs["skipCombat"] = 0
                 # Skip this combat, generate a loot room instead
-                self.game.switch_screen("loot")
+                self.game.switch_screen(ScreenName.LOOT)
             else:
                 start_combat(s, is_boss=False)
-                self.game.switch_screen("combat")
+                self.game.switch_screen(ScreenName.COMBAT)
         elif ptype == "event":
             event = random.choice(EVENTS)
             self.game.pending_event = event
-            self.game.switch_screen("event")
+            self.game.switch_screen(ScreenName.EVENT)
         elif ptype == "loot":
-            self.game.switch_screen("loot")
+            self.game.switch_screen(ScreenName.LOOT)
         elif ptype == "rest":
-            self.game.switch_screen("rest")
+            self.game.switch_screen(ScreenName.REST)
         elif ptype == "shop":
             items, prices = generate_shop(s)
             self.game.shop_items = items
             self.game.shop_prices = prices
             self.game.shop_sold = [False] * len(items)
-            self.game.switch_screen("shop")
+            self.game.switch_screen(ScreenName.SHOP)
         elif ptype == "trap":
             trap = random.choice(TRAPS)
             trap_idx = TRAPS.index(trap)
@@ -201,9 +202,9 @@ class ExploreScreen(Screen):
             self.game.trap_desc = trap["desc"]
             if game_over:
                 self.game.gameover_msg = "The trap claims your life."
-                self.game.switch_screen("gameover")
+                self.game.switch_screen(ScreenName.GAMEOVER)
             else:
-                self.game.switch_screen("trap_result")
+                self.game.switch_screen(ScreenName.TRAP_RESULT)
 
     def draw(self, surface):
         s = self.game.state
