@@ -54,7 +54,13 @@ class TrapResultScreen(Screen):
             align="center",
         )
         draw_text_with_glow(
-            surface, self.ctx.screen_data["trap_desc"], self.assets.fonts["small"], C.INK_LIGHT, SCREEN_W // 2, 252, align="center"
+            surface,
+            self.ctx.screen_data["trap_desc"],
+            self.assets.fonts["small"],
+            C.INK_LIGHT,
+            SCREEN_W // 2,
+            252,
+            align="center",
         )
         draw_gold_divider(surface, SCREEN_W // 2 - 150, 270, 300)
         draw_text_wrapped_glow(

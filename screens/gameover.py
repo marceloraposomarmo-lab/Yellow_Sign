@@ -58,7 +58,13 @@ class GameOverScreen(Screen):
         )
         draw_gold_divider(surface, SCREEN_W // 2 - 180, 120, 360)
         draw_text_wrapped_glow(
-            surface, self.ctx.screen_data["gameover_msg"], self.assets.fonts["body"], C.INK, SCREEN_W // 2 - 300, 140, 600
+            surface,
+            self.ctx.screen_data["gameover_msg"],
+            self.assets.fonts["body"],
+            C.INK,
+            SCREEN_W // 2 - 300,
+            140,
+            600,
         )
 
         cx = SCREEN_W // 2

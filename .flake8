@@ -1,0 +1,28 @@
+[flake8]
+max-line-length = 120
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    *.egg-info,
+    saves,
+    logs
+# Ignore pre-existing violations tracked for future cleanup
+ignore =
+    E203,
+    E501,
+    W503,
+    E741,
+    F401,
+    F841,
+    E402,
+    F824,
+    F811,
+    E226,
+    F541,
+    E712
+per-file-ignores =
+    __init__.py: F401

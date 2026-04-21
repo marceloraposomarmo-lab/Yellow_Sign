@@ -13,17 +13,26 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.models import GameState, Skill, Item, Enemy, CombatState, has_status, apply_status
 from engine.combat import (
-    calc_player_damage, apply_damage_to_enemy, apply_damage_to_player,
-    enemy_turn, tick_player_buffs,
-    process_status_effects, process_player_status_effects,
-    check_boss_phase, combat_run_attempt,
+    calc_player_damage,
+    apply_damage_to_enemy,
+    apply_damage_to_player,
+    enemy_turn,
+    tick_player_buffs,
+    process_status_effects,
+    process_player_status_effects,
+    check_boss_phase,
+    combat_run_attempt,
     start_combat,
 )
 from engine.items import generate_item
 from engine.skills import (
     player_use_skill,
-    _handle_self_heal, _handle_self_shield, _handle_self_buff,
-    HEAL_HANDLERS, SHIELD_HANDLERS, BUFF_HANDLERS,
+    _handle_self_heal,
+    _handle_self_shield,
+    _handle_self_buff,
+    HEAL_HANDLERS,
+    SHIELD_HANDLERS,
+    BUFF_HANDLERS,
 )
 from data import CLASSES, ENEMIES, BOSS
 
@@ -36,6 +45,7 @@ _tests_passed = 0
 _tests_failed = 0
 _failures = []
 
+
 def assert_eq(actual, expected, msg=""):
     global _tests_run, _tests_passed, _tests_failed
     _tests_run += 1
@@ -45,8 +55,10 @@ def assert_eq(actual, expected, msg=""):
         _tests_failed += 1
         _failures.append(f"  FAIL: {msg}\n    Expected: {expected}\n    Got: {actual}")
 
+
 def assert_true(condition, msg=""):
     assert_eq(condition, True, msg)
+
 
 def assert_gt(actual, threshold, msg=""):
     global _tests_run, _tests_passed, _tests_failed
@@ -57,6 +69,7 @@ def assert_gt(actual, threshold, msg=""):
         _tests_failed += 1
         _failures.append(f"  FAIL: {msg}\n    Expected > {threshold}, Got: {actual}")
 
+
 def assert_gte(actual, threshold, msg=""):
     global _tests_run, _tests_passed, _tests_failed
     _tests_run += 1
@@ -66,11 +79,13 @@ def assert_gte(actual, threshold, msg=""):
         _tests_failed += 1
         _failures.append(f"  FAIL: {msg}\n    Expected >= {threshold}, Got: {actual}")
 
+
 def make_state(class_id="scholar"):
     """Create a fresh game state for testing."""
     state = GameState()
     state.init_from_class(class_id)
     return state
+
 
 def make_combat(class_id="scholar", is_boss=False):
     """Create a game state with active combat."""
@@ -82,6 +97,7 @@ def make_combat(class_id="scholar", is_boss=False):
 # ═══════════════════════════════════════════
 # TEST SUITES
 # ═══════════════════════════════════════════
+
 
 def test_game_state_init():
     """Test that all classes initialize correctly."""
@@ -104,14 +120,16 @@ def test_damage_calculation():
     state = make_combat("scholar")
 
     # Physical skill
-    phys_skill = Skill({"name": "Test Strike", "type": "physical", "power": 1.5,
-                         "stat": "str", "desc": "test", "formula": "test"})
+    phys_skill = Skill(
+        {"name": "Test Strike", "type": "physical", "power": 1.5, "stat": "str", "desc": "test", "formula": "test"}
+    )
     raw = calc_player_damage(state, phys_skill)
     assert_gt(raw, 0, "Physical skill should deal positive damage")
 
     # Magic skill
-    magic_skill = Skill({"name": "Test Bolt", "type": "magic", "power": 2.0,
-                          "stat": "int", "desc": "test", "formula": "test"})
+    magic_skill = Skill(
+        {"name": "Test Bolt", "type": "magic", "power": 2.0, "stat": "int", "desc": "test", "formula": "test"}
+    )
     raw_magic = calc_player_damage(state, magic_skill)
     assert_gt(raw_magic, 0, "Magic skill should deal positive damage")
 
@@ -130,8 +148,9 @@ def test_damage_application():
     e = state.combat.enemy
     initial_hp = e.hp
 
-    skill = Skill({"name": "Strike", "type": "physical", "power": 1.0,
-                    "stat": "str", "desc": "test", "formula": "test"})
+    skill = Skill(
+        {"name": "Strike", "type": "physical", "power": 1.0, "stat": "str", "desc": "test", "formula": "test"}
+    )
     raw = calc_player_damage(state, skill)
     dmg, is_crit = apply_damage_to_enemy(state, raw, skill)
 
@@ -191,8 +210,7 @@ def test_skill_types():
             # Check log types are valid
             valid_types = {"damage", "crit", "heal", "shield", "effect", "info"}
             for text, log_type in logs:
-                assert_true(log_type in valid_types,
-                            f"{cid}/{sk.name}: invalid log type '{log_type}'")
+                assert_true(log_type in valid_types, f"{cid}/{sk.name}: invalid log type '{log_type}'")
 
 
 def test_buff_system():
@@ -235,6 +253,7 @@ def test_debuff_immunity():
 
     # Try to apply a debuff
     from engine.combat import apply_status_player
+
     apply_status_player(state, "burning", 3)
     assert_true(not has_status(state, "burning"), "Immunity should block burning")
 
@@ -344,8 +363,7 @@ def test_madness_death():
             state.madness = 99
             logs = player_use_skill(state, state.active_skills.index(sk))
             if state.madness >= 100:
-                assert_true(any("shatter" in t.lower() for t, _ in logs),
-                            "Madness 100 should shatter mind")
+                assert_true(any("shatter" in t.lower() for t, _ in logs), "Madness 100 should shatter mind")
             break
 
 
@@ -426,13 +444,13 @@ def test_combat_simulation_full():
         # Combat should end within max_turns
         assert_true(turns < max_turns, f"{cid}: combat should resolve within {max_turns} turns")
         someone_died = (state.hp <= 0) or (state.combat and state.combat.enemy.hp <= 0)
-        assert_true(someone_died or turns >= max_turns,
-                    f"{cid}: combat should end with someone dead or timeout")
+        assert_true(someone_died or turns >= max_turns, f"{cid}: combat should end with someone dead or timeout")
 
 
 # ═══════════════════════════════════════════
 # RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     """Run all test suites."""

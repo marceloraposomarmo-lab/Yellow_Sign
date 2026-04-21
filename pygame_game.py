@@ -101,9 +101,7 @@ class Game:
         try:
             if self.fullscreen:
                 info = pygame.display.Info()
-                self.screen = pygame.display.set_mode(
-                    (info.current_w, info.current_h), pygame.FULLSCREEN
-                )
+                self.screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
                 logger.info("Display: fullscreen mode (%dx%d)", info.current_w, info.current_h)
             else:
                 screen_w = settings.get("display.screen_width", SCREEN_W)

@@ -147,5 +147,11 @@ class ShopScreen(Screen):
         if self.ctx.screen_data.get("shop_msg_timer", 0) > 0:
             color = C.MIST if self.ctx.screen_data.get("shop_msg_ok", False) else C.CRIMSON
             draw_text_with_glow(
-                surface, self.ctx.screen_data.get("shop_message", ""), self.assets.fonts["body"], color, SCREEN_W // 2, y + 75, align="center"
+                surface,
+                self.ctx.screen_data.get("shop_message", ""),
+                self.assets.fonts["body"],
+                color,
+                SCREEN_W // 2,
+                y + 75,
+                align="center",
             )

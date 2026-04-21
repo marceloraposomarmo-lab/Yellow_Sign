@@ -15,7 +15,9 @@ from engine.models import GameState, Skill, Item, StatusEffect, has_status, appl
 from engine.combat import start_combat, apply_damage_to_enemy, apply_damage_to_player, enemy_turn
 from engine.damage import calc_player_damage, calc_preview_damage
 from engine.status_effects import (
-    process_status_effects, process_player_status_effects, tick_player_buffs,
+    process_status_effects,
+    process_player_status_effects,
+    tick_player_buffs,
 )
 from data import CLASSES
 
@@ -148,8 +150,9 @@ def test_enemy_hp_never_negative():
     state = make_combat("scholar")
     e = state.combat.enemy
 
-    skill = Skill({"name": "Mega Strike", "type": "physical", "power": 50.0,
-                    "stat": "str", "desc": "test", "formula": "test"})
+    skill = Skill(
+        {"name": "Mega Strike", "type": "physical", "power": 50.0, "stat": "str", "desc": "test", "formula": "test"}
+    )
     raw = calc_player_damage(state, skill)
     apply_damage_to_enemy(state, raw, skill)
     assert_gte(e.hp, 0, "Enemy HP should never go negative")
@@ -286,8 +289,7 @@ def test_barrier_single_use():
 
     # Second hit goes through
     dmg2, result2 = apply_damage_to_player(state, 999, True)
-    assert_true(result2 != "barrier" or state.barrier > 0,
-                "Without barrier, damage should apply normally")
+    assert_true(result2 != "barrier" or state.barrier > 0, "Without barrier, damage should apply normally")
 
 
 def test_undying_survives_fatal():
@@ -395,10 +397,8 @@ def test_non_damage_skill_type_is_correct():
     state = make_combat("scholar")
 
     for skill_type in ("self_buff", "self_heal", "self_shield"):
-        skill = Skill(name="Test", type=skill_type, power=10.0,
-                      stat="int", desc="test", formula="test")
-        assert_true(skill.type == skill_type,
-                    f"{skill_type} should be categorized correctly")
+        skill = Skill(name="Test", type=skill_type, power=10.0, stat="int", desc="test", formula="test")
+        assert_true(skill.type == skill_type, f"{skill_type} should be categorized correctly")
 
 
 def test_enemy_stunned_skips_turn():
@@ -416,19 +416,20 @@ def test_preview_damage_no_randomness():
     """calc_preview_damage is deterministic."""
     print("\n=== Preview Damage Deterministic ===")
     state = make_combat("scholar")
-    skill = Skill({"name": "Strike", "type": "physical", "power": 1.0,
-                    "stat": "str", "desc": "test", "formula": "test"})
+    skill = Skill(
+        {"name": "Strike", "type": "physical", "power": 1.0, "stat": "str", "desc": "test", "formula": "test"}
+    )
 
     results = [calc_preview_damage(state, skill) for _ in range(20)]
     # All results should be identical (no randomness)
-    assert_true(all(r == results[0] for r in results),
-                "Preview damage should be deterministic across calls")
+    assert_true(all(r == results[0] for r in results), "Preview damage should be deterministic across calls")
 
 
 def test_boss_cannot_flee():
     """Cannot flee from boss fights."""
     print("\n=== Boss Cannot Flee ===")
     from engine.combat import combat_run_attempt
+
     state = make_combat("scholar", is_boss=True)
     assert_true(not combat_run_attempt(state), "Should not flee from boss")
 
@@ -509,10 +510,11 @@ def test_enemy_scaling():
     """Enemies scale correctly with floor level."""
     print("\n=== Enemy Scaling ===")
     from data import ENEMIES
+
     enemy_data = ENEMIES[0]
 
-    e1 = type('obj', (object,), {'__init__': lambda s: None})()
-    e_low = type('Enemy', (), {})()
+    e1 = type("obj", (object,), {"__init__": lambda s: None})()
+    e_low = type("Enemy", (), {})()
     # Use the actual Enemy class
     e_low_f = __import__("engine.models", fromlist=["Enemy"]).Enemy(enemy_data, floor=1)
     e_high_f = __import__("engine.models", fromlist=["Enemy"]).Enemy(enemy_data, floor=15)
@@ -526,6 +528,7 @@ def test_boss_phase_thresholds():
     """Boss phase transitions at exact HP thresholds."""
     print("\n=== Boss Phase Exact Thresholds ===")
     from engine.combat import check_boss_phase
+
     state = make_combat("scholar", is_boss=True)
     e = state.combat.enemy
 
@@ -546,6 +549,7 @@ def test_boss_phase_thresholds():
 # ═══════════════════════════════════════════
 # RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     print("=" * 60)

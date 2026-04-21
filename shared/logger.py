@@ -64,14 +64,17 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 # LOG LEVEL COLOR CODES (ANSI)
 # ═══════════════════════════════════════════
 
+
 class _LogColors:
     """ANSI color codes for log levels."""
+
     RESET = "\033[0m"
-    DEBUG = "\033[36m"       # Cyan
-    INFO = "\033[32m"        # Green
-    WARNING = "\033[33m"     # Yellow
-    ERROR = "\033[31m"       # Red
+    DEBUG = "\033[36m"  # Cyan
+    INFO = "\033[32m"  # Green
+    WARNING = "\033[33m"  # Yellow
+    ERROR = "\033[31m"  # Red
     CRITICAL = "\033[1;31m"  # Bold Red
+
 
 _LEVEL_COLORS = {
     "DEBUG": _LogColors.DEBUG,
@@ -92,9 +95,7 @@ class _ColorFormatter(logging.Formatter):
     def format(self, record):
         if self.use_color and record.levelname in _LEVEL_COLORS:
             # Store original and apply color
-            record.levelname_colored = (
-                f"{_LEVEL_COLORS[record.levelname]}{record.levelname:<8}{_LogColors.RESET}"
-            )
+            record.levelname_colored = f"{_LEVEL_COLORS[record.levelname]}{record.levelname:<8}{_LogColors.RESET}"
             # Use the colored version in format string
             record.levelname = record.levelname_colored
         return super().format(record)
@@ -119,6 +120,7 @@ def _detect_color_support() -> bool:
     if sys.platform == "win32":
         try:
             import ctypes
+
             kernel32 = ctypes.windll.kernel32
             # Enable ANSI escape sequences on Windows 10+
             kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)

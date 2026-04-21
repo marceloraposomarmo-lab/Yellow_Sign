@@ -17,8 +17,13 @@ from engine.damage import calc_player_damage
 from engine.status_effects import process_status_effects, process_player_status_effects, tick_player_buffs
 from engine.items import generate_item
 from engine.world import (
-    advance_floor, resolve_event, resolve_trap, generate_paths,
-    generate_shop, buy_shop_item, get_floor_narrative,
+    advance_floor,
+    resolve_event,
+    resolve_trap,
+    generate_paths,
+    generate_shop,
+    buy_shop_item,
+    get_floor_narrative,
 )
 from engine.skills import player_use_skill
 from data import CLASSES, EVENTS, TRAPS
@@ -143,8 +148,7 @@ def test_event_stat_changes():
             if "gain_int" in outcome["effect"]:
                 pre_int = state.stats["int"]
                 resolve_event(state, i, j)
-                assert_true(state.stats["int"] >= pre_int,
-                            f"Event {outcome['effect']} should increase INT")
+                assert_true(state.stats["int"] >= pre_int, f"Event {outcome['effect']} should increase INT")
                 return  # found one, done
 
 
@@ -388,6 +392,7 @@ def test_world_combat_state_isolation():
 # ═══════════════════════════════════════════
 # RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     print("=" * 60)

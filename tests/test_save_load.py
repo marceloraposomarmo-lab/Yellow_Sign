@@ -248,8 +248,11 @@ def test_round_trip_pending_levelup():
         save_system.save_game(state, slot=0)
         loaded = save_system.load_game(slot=0)
 
-        assert_eq(len(loaded.pending_levelup_skills), len(state.pending_levelup_skills),
-                  "Pending level-up skill count should match")
+        assert_eq(
+            len(loaded.pending_levelup_skills),
+            len(state.pending_levelup_skills),
+            "Pending level-up skill count should match",
+        )
         for i, (orig, load_sk) in enumerate(zip(state.pending_levelup_skills, loaded.pending_levelup_skills)):
             assert_eq(load_sk.name, orig.name, f"Pending skill {i}: name should match")
     finally:
@@ -341,8 +344,9 @@ def test_delete_save():
         # Delete existing save
         result = save_system.delete_save(slot=0)
         assert_true(result, "Deleting existing save should return True")
-        assert_true(not os.path.exists(os.path.join(save_system.SAVE_DIR, "save_0.json")),
-                    "Save file should be deleted")
+        assert_true(
+            not os.path.exists(os.path.join(save_system.SAVE_DIR, "save_0.json")), "Save file should be deleted"
+        )
 
         # Delete non-existent save
         result = save_system.delete_save(slot=0)
@@ -434,6 +438,7 @@ def test_save_all_classes():
     setup_save_dir()
     try:
         from data import CLASSES
+
         for cid in CLASSES:
             state = make_state(cid)
             save_system.save_game(state, slot=0)
@@ -448,6 +453,7 @@ def test_save_all_classes():
 # ═══════════════════════════════════════════
 # RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     print("=" * 60)

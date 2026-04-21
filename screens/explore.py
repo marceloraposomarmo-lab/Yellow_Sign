@@ -168,7 +168,9 @@ class ExploreScreen(Screen):
         self.paths = []
         s.rooms_explored += 1
         if s.add_madness(2):
-            self.ctx.screen_data["gameover_msg"] = "Your mind shatters. The Yellow Sign consumes your last rational thought."
+            self.ctx.screen_data["gameover_msg"] = (
+                "Your mind shatters. The Yellow Sign consumes your last rational thought."
+            )
             self.ctx.navigate(ScreenName.GAMEOVER)
             return
 

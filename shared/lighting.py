@@ -36,13 +36,13 @@ from shared.surface_pool import surface_pool
 # Colors for status whispers — desaturated, dark, barely-there tints.
 # Lovecraftian horror suggests wrongness; it does not announce it with neon.
 _STATUS_GLOW_COLORS = {
-    "burning": (80, 35, 10),      # Dying embers, barely smouldering
-    "poisoned": (25, 50, 15),     # Putrid undergrowth rot
-    "bleeding": (55, 10, 10),     # Old bloodstain, dried and dark
-    "weakened": (45, 40, 22),     # Jaundiced, sickly pallor
-    "freezing": (25, 40, 60),     # Cold tombstone, not ice blue
-    "petrified": (40, 35, 30),    # Dead stone, grey and lifeless
-    "doom": (30, 5, 20),          # The void whispering at the edge
+    "burning": (80, 35, 10),  # Dying embers, barely smouldering
+    "poisoned": (25, 50, 15),  # Putrid undergrowth rot
+    "bleeding": (55, 10, 10),  # Old bloodstain, dried and dark
+    "weakened": (45, 40, 22),  # Jaundiced, sickly pallor
+    "freezing": (25, 40, 60),  # Cold tombstone, not ice blue
+    "petrified": (40, 35, 30),  # Dead stone, grey and lifeless
+    "doom": (30, 5, 20),  # The void whispering at the edge
 }
 
 # Torch light color: dying gaslight — sickly warm, not cheerful amber.
@@ -51,17 +51,17 @@ _TORCH_COLOR = (150, 125, 75)
 _TORCH_FLICKER_COLOR = (120, 95, 55)
 
 # HP-based vignette colors: oppressive blackness closing in, not a red flash.
-_HP_VIGNETTE_HIGH = (0, 0, 0, 0)       # No vignette at full HP
-_HP_VIGNETTE_LOW = (15, 2, 5, 200)    # Near-black with a faint dried-blood tint
+_HP_VIGNETTE_HIGH = (0, 0, 0, 0)  # No vignette at full HP
+_HP_VIGNETTE_LOW = (15, 2, 5, 200)  # Near-black with a faint dried-blood tint
 
 # Depth darkness: the Spiral devours light. Deeper = darker, more claustrophobic.
 _DEPTH_DARKNESS = {
     # floor_range: (ambient_alpha, torch_radius_mult, vignette_intensity)
-    (1, 4):   (15,   0.85, 0.05),   # The Asylum: dimly lit, not safe
-    (5, 8):   (35,   0.72, 0.15),   # The Depths Below: corridors narrow
-    (9, 12):  (55,   0.58, 0.30),   # The Descent: light is dying
-    (13, 16): (80,   0.42, 0.50),   # Approaching the Threshold: suffocating
-    (17, 20): (110,  0.25, 0.70),   # The Spiral: nearly pitch black
+    (1, 4): (15, 0.85, 0.05),  # The Asylum: dimly lit, not safe
+    (5, 8): (35, 0.72, 0.15),  # The Depths Below: corridors narrow
+    (9, 12): (55, 0.58, 0.30),  # The Descent: light is dying
+    (13, 16): (80, 0.42, 0.50),  # Approaching the Threshold: suffocating
+    (17, 20): (110, 0.25, 0.70),  # The Spiral: nearly pitch black
 }
 
 # Cache settings
@@ -129,6 +129,7 @@ def _get_light_texture(radius: int, color: tuple, intensity: float = 1.0) -> pyg
 # TORCH FLICKER ENGINE
 # ═══════════════════════════════════════════
 
+
 class TorchFlicker:
     """Simulates realistic torch-like light flicker using multiple sine waves.
 
@@ -141,7 +142,7 @@ class TorchFlicker:
     def __init__(self):
         # Multiple frequency components for organic flicker
         self._phases = [random.uniform(0, math.tau) for _ in range(5)]
-        self._freqs = [1.7, 3.1, 5.3, 0.7, 8.9]   # Hz
+        self._freqs = [1.7, 3.1, 5.3, 0.7, 8.9]  # Hz
         self._amps = [0.08, 0.05, 0.04, 0.12, 0.02]  # Subtle, restrained flicker
 
     def get_intensity(self, time_seconds: float) -> float:
@@ -188,6 +189,7 @@ class TorchFlicker:
 # LIGHT SOURCE
 # ═══════════════════════════════════════════
 
+
 class LightSource:
     """A single point light source in the scene.
 
@@ -206,8 +208,16 @@ class LightSource:
         pulse_speed: Speed of gentle pulsing (0 = no pulse)
     """
 
-    def __init__(self, x: int, y: int, radius: int = 200, color: tuple = _TORCH_COLOR,
-                 intensity: float = 0.7, flicker: bool = False, pulse_speed: float = 0.0):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        radius: int = 200,
+        color: tuple = _TORCH_COLOR,
+        intensity: float = 0.7,
+        flicker: bool = False,
+        pulse_speed: float = 0.0,
+    ):
         self.x = x
         self.y = y
         self.radius = radius
@@ -224,7 +234,7 @@ class LightSource:
             intensity *= self._flicker.get_intensity(time_seconds)
         if self.pulse_speed > 0:
             pulse = 0.5 + 0.5 * math.sin(time_seconds * self.pulse_speed)
-            intensity *= (0.85 + 0.15 * pulse)
+            intensity *= 0.85 + 0.15 * pulse
         return max(0.0, min(1.0, intensity))
 
     def get_current_color(self, time_seconds: float) -> tuple:
@@ -237,6 +247,7 @@ class LightSource:
 # ═══════════════════════════════════════════
 # MAIN LIGHTING SYSTEM
 # ═══════════════════════════════════════════
+
 
 class LightingSystem:
     """Central lighting system for the entire game.
@@ -283,13 +294,12 @@ class LightingSystem:
         """Create ambient torch positions — dying wall sconces in a forgotten corridor."""
         # Two dim torches flanking the screen edges, barely holding on
         self._ambient_torches = [
-            LightSource(80, SCREEN_H // 2 - 40, radius=220, color=_TORCH_COLOR,
-                        intensity=0.14, flicker=True),
-            LightSource(SCREEN_W - 80, SCREEN_H // 2 - 40, radius=220, color=_TORCH_COLOR,
-                        intensity=0.14, flicker=True),
+            LightSource(80, SCREEN_H // 2 - 40, radius=220, color=_TORCH_COLOR, intensity=0.14, flicker=True),
+            LightSource(
+                SCREEN_W - 80, SCREEN_H // 2 - 40, radius=220, color=_TORCH_COLOR, intensity=0.14, flicker=True
+            ),
             # Faint ceiling glow — like light filtering through a cracked dome
-            LightSource(SCREEN_W // 2, 60, radius=280, color=(110, 100, 80),
-                        intensity=0.06, flicker=True),
+            LightSource(SCREEN_W // 2, 60, radius=280, color=(110, 100, 80), intensity=0.06, flicker=True),
         ]
 
     def enable(self):
@@ -304,8 +314,16 @@ class LightingSystem:
         """Remove all dynamic light sources (keep ambient torches)."""
         self.lights.clear()
 
-    def add_light(self, x: int, y: int, radius: int = 200, color: tuple = _TORCH_COLOR,
-                  intensity: float = 0.7, flicker: bool = False, pulse_speed: float = 0.0) -> LightSource:
+    def add_light(
+        self,
+        x: int,
+        y: int,
+        radius: int = 200,
+        color: tuple = _TORCH_COLOR,
+        intensity: float = 0.7,
+        flicker: bool = False,
+        pulse_speed: float = 0.0,
+    ) -> LightSource:
         """Add a new light source to the scene.
 
         Args:
@@ -337,8 +355,16 @@ class LightingSystem:
         """
         self._status_effects = statuses
 
-    def update_state(self, hp_ratio: float, madness: float, floor: int, max_floor: int,
-                     in_combat: bool = False, enemy_hp_ratio: float = 1.0, is_boss: bool = False):
+    def update_state(
+        self,
+        hp_ratio: float,
+        madness: float,
+        floor: int,
+        max_floor: int,
+        in_combat: bool = False,
+        enemy_hp_ratio: float = 1.0,
+        is_boss: bool = False,
+    ):
         """Update the lighting system with current game state.
 
         Args:
@@ -366,8 +392,7 @@ class LightingSystem:
         """
         for (lo, hi), params in _DEPTH_DARKNESS.items():
             if lo <= self._floor <= hi:
-                return {"ambient_alpha": params[0], "torch_mult": params[1],
-                        "vig_int": params[2]}
+                return {"ambient_alpha": params[0], "torch_mult": params[1], "vig_int": params[2]}
         # Fallback for floors beyond defined ranges
         return {"ambient_alpha": 80, "torch_mult": 0.6, "vig_int": 0.55}
 
@@ -555,8 +580,7 @@ class LightingSystem:
                 for i in range(20):
                     ratio = i / 20
                     a = int(alpha * 0.8 * ratio * ratio)
-                    pygame.draw.rect(glow, (*color, min(255, a)),
-                                     (i * 3, i * 3, SCREEN_W - i * 6, SCREEN_H - i * 6), 1)
+                    pygame.draw.rect(glow, (*color, min(255, a)), (i * 3, i * 3, SCREEN_W - i * 6, SCREEN_H - i * 6), 1)
             else:
                 # Generic: faint edge whisper
                 for i in range(12):
@@ -664,8 +688,10 @@ class LightingSystem:
 # CONVENIENCE FUNCTIONS FOR SCREEN INTEGRATION
 # ═══════════════════════════════════════════
 
-def create_combat_lighting(player_x: int, player_y: int, enemy_x: int, enemy_y: int,
-                           player_statuses: list = None) -> list:
+
+def create_combat_lighting(
+    player_x: int, player_y: int, enemy_x: int, enemy_y: int, player_statuses: list = None
+) -> list:
     """Create combat light sources — dim, atmospheric, not a stadium.
 
     Combat is fought in near-darkness, lit only by the player's fading
@@ -684,26 +710,17 @@ def create_combat_lighting(player_x: int, player_y: int, enemy_x: int, enemy_y: 
     lights = []
 
     # Player torch — a single dying flame, barely holding back the dark
-    lights.append(LightSource(
-        player_x, player_y + 40, radius=180,
-        color=_TORCH_COLOR, intensity=0.22, flicker=True
-    ))
+    lights.append(LightSource(player_x, player_y + 40, radius=180, color=_TORCH_COLOR, intensity=0.22, flicker=True))
 
     # Enemy presence — not a light source, but a faint sickly pallor
     # suggesting something unnatural is standing in the darkness
     enemy_color = (75, 65, 85)  # Not purple. Wrong. Just... wrong.
-    lights.append(LightSource(
-        enemy_x, enemy_y + 30, radius=140,
-        color=enemy_color, intensity=0.10, pulse_speed=0.8
-    ))
+    lights.append(LightSource(enemy_x, enemy_y + 30, radius=140, color=enemy_color, intensity=0.10, pulse_speed=0.8))
 
     # Center combat area — faintest hint of visibility
     center_x = (player_x + enemy_x) // 2
     center_y = (player_y + enemy_y) // 2
-    lights.append(LightSource(
-        center_x, center_y, radius=240,
-        color=(90, 80, 65), intensity=0.05
-    ))
+    lights.append(LightSource(center_x, center_y, radius=240, color=(90, 80, 65), intensity=0.05))
 
     # No status glow LightSources — status effects are conveyed through
     # edge whispers only (drawn by _draw_status_edge_glow).

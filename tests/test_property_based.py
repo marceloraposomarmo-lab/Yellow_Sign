@@ -17,7 +17,9 @@ from engine.models import GameState, Item, Skill, StatusEffect, apply_status, ha
 from engine.combat import start_combat, apply_damage_to_enemy, apply_damage_to_player, enemy_turn
 from engine.damage import calc_player_damage, _base_damage
 from engine.status_effects import (
-    process_status_effects, process_player_status_effects, tick_player_buffs,
+    process_status_effects,
+    process_player_status_effects,
+    tick_player_buffs,
 )
 from engine.items import generate_item, determine_rarity
 from data import CLASSES, ACC_MIN, ACC_MAX
@@ -163,10 +165,13 @@ def test_item_generation_valid(floor, luck):
         random.seed(42)
         item = generate_item(floor, luck=luck)
         ok = (
-            isinstance(item.name, str) and len(item.name) > 0
+            isinstance(item.name, str)
+            and len(item.name) > 0
             and item.rarity in (1, 2, 3, 4)
-            and isinstance(item.stats, dict) and len(item.stats) > 0
-            and isinstance(item.slot, str) and len(item.slot) > 0
+            and isinstance(item.stats, dict)
+            and len(item.stats) > 0
+            and isinstance(item.slot, str)
+            and len(item.slot) > 0
         )
         if ok:
             _item_passed += 1
@@ -259,6 +264,7 @@ def test_status_refresh_idempotent(status_type, duration1, duration2):
     global _status_tests, _status_passed
     _status_tests += 1
     from engine.models import Enemy as E
+
     e = E.__new__(E)
     e.statuses = []
     e.hp = 100
@@ -302,6 +308,7 @@ def test_level_up_increases(extra_xp):
 # ═══════════════════════════════════════════
 # RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     print("=" * 60)
@@ -359,14 +366,28 @@ def run_all_tests():
     print(f"    Level up increases: {_levelup_passed}/{_levelup_tests}")
 
     total_tests = (
-        _madness_tests + _hp_tests + _enemy_hp_tests + _recalc_tests
-        + _item_tests + _rarity_tests + _acc_tests + _nondmg_tests
-        + _status_tests + _levelup_tests
+        _madness_tests
+        + _hp_tests
+        + _enemy_hp_tests
+        + _recalc_tests
+        + _item_tests
+        + _rarity_tests
+        + _acc_tests
+        + _nondmg_tests
+        + _status_tests
+        + _levelup_tests
     )
     total_passed = (
-        _madness_passed + _hp_passed + _enemy_hp_passed + _recalc_passed
-        + _item_passed + _rarity_passed + _acc_passed + _nondmg_passed
-        + _status_passed + _levelup_passed
+        _madness_passed
+        + _hp_passed
+        + _enemy_hp_passed
+        + _recalc_passed
+        + _item_passed
+        + _rarity_passed
+        + _acc_passed
+        + _nondmg_passed
+        + _status_passed
+        + _levelup_passed
     )
     total_failed = total_tests - total_passed
 
