@@ -24,6 +24,7 @@ from shared import (
 )
 from shared.game_context import GameContext
 from shared.rendering import ease_out_cubic, ease_in_cubic, ease_in_quad
+from shared.surface_pool import surface_pool, render_cache
 from engine import calc_preview_damage, _get_enemy_intent_message
 from screens.combat.particles import create_particle, PARTICLE_TYPES
 
@@ -80,10 +81,11 @@ class CombatRendererMixin:
         if tip_y < 10:
             tip_y = btn_rect.bottom + 6
 
-        # Background + border
-        bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+        # Background + border — use pooled surface
+        bg = surface_pool.acquire(tip_w, tip_h)
         bg.fill((10, 8, 20, 230))
         surface.blit(bg, (tip_x, tip_y))
+        surface_pool.release(bg)
         pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
 
         for i, l in enumerate(lines):
@@ -158,11 +160,11 @@ class CombatRendererMixin:
         pulse = abs(math.sin(self._intent_pulse * 3))
         glow_alpha = int(40 + 30 * pulse)
 
-        # Draw intent panel background with glow
-        intent_bg = pygame.Surface((intent_w, intent_h), pygame.SRCALPHA)
+        # Draw intent panel background with glow — use pooled surfaces
+        intent_bg = surface_pool.acquire(intent_w, intent_h)
         intent_bg.fill((10, 8, 20, 200))
-        # Glow effect
-        glow_surf = pygame.Surface((intent_w + 16, intent_h + 16), pygame.SRCALPHA)
+        # Glow effect — use pooled surface
+        glow_surf = surface_pool.acquire(intent_w + 16, intent_h + 16)
         glow_r, glow_g, glow_b = intent_color
         for i in range(8):
             alpha = int((8 - i) * 4 + glow_alpha * 0.5)
@@ -171,6 +173,8 @@ class CombatRendererMixin:
             )
         surface.blit(glow_surf, (intent_x - 8, intent_y - 8))
         surface.blit(intent_bg, (intent_x, intent_y))
+        surface_pool.release(glow_surf)
+        surface_pool.release(intent_bg)
         pygame.draw.rect(surface, intent_color, (intent_x, intent_y, intent_w, intent_h), 2, border_radius=4)
 
         # Intent label at top
@@ -239,11 +243,13 @@ class CombatRendererMixin:
 
         draw_hud(surface, s, self.assets)
 
-        # Particles (behind UI elements)
+        # Particles (behind UI elements) — use pooled surfaces
         for p in self.particles:
-            ps = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
+            sz = p["size"] * 2
+            ps = surface_pool.acquire(sz, sz)
             ps.fill((*p["color"], int(p["alpha"])))
             surface.blit(ps, (int(p["x"]) + ox, int(p["y"]) + oy))
+            surface_pool.release(ps)
 
         # --- Enemy info panel (compact nameplate above sprite) ---
         # During horror death animation, panel glitches
@@ -337,9 +343,10 @@ class CombatRendererMixin:
                 glitch_y = bar_y + random.randint(0, bar_h)
                 glitch_w = random.randint(30, bar_w)
                 glitch_x = bar_x + random.randint(0, bar_w - glitch_w)
-                glitch_surf = pygame.Surface((glitch_w, 2), pygame.SRCALPHA)
+                glitch_surf = surface_pool.acquire(glitch_w, 2)
                 glitch_surf.fill((140, 60, 180, int(180 * self._glitch_intensity)))
                 surface.blit(glitch_surf, (glitch_x, glitch_y))
+                surface_pool.release(glitch_surf)
         elif self._victory_state:
             # After reality_break: empty bar
             draw_bar(surface, bar_x, bar_y, bar_w, bar_h, 0, e.max_hp, (30, 5, 50))
@@ -385,10 +392,11 @@ class CombatRendererMixin:
                 if random.random() < self._glitch_intensity * 0.15:
                     # Flash purple tint
                     flash = enemy_sprite.copy()
-                    flash_overlay = pygame.Surface(flash.get_size(), pygame.SRCALPHA)
+                    flash_overlay = surface_pool.acquire(flash.get_width(), flash.get_height())
                     flash_overlay.fill((140, 60, 180, int(60 * self._glitch_intensity)))
                     flash.blit(flash_overlay, (0, 0))
                     surface.blit(flash, (sprite_x + int(random.uniform(-2, 2) * self._glitch_intensity), sprite_y))
+                    surface_pool.release(flash_overlay)
                 else:
                     # Slight horizontal displacement
                     jitter_x = int(random.uniform(-1, 1) * self._glitch_intensity * 3)
@@ -403,7 +411,7 @@ class CombatRendererMixin:
                     enemy_sprite = pygame.transform.scale(enemy_sprite, (sprite_w, int(sh * sprite_w / sw)))
                 # Draw sprite with horizontal shear/slice distortion
                 src_w, src_h = enemy_sprite.get_size()
-                dest_surface = pygame.Surface((src_w + 20, src_h), pygame.SRCALPHA)
+                dest_surface = surface_pool.acquire(src_w + 20, src_h)
                 # Slice sprite into horizontal strips with random offsets
                 strip_h = 4
                 for sy in range(0, src_h, strip_h):
@@ -412,11 +420,13 @@ class CombatRendererMixin:
                     offset_x = int(random.uniform(-8, 8) * self._glitch_intensity)
                     dest_surface.blit(strip, (10 + offset_x, sy))
                 # Color overlay — pulsing between purple and crimson
-                color_flash = pygame.Surface(dest_surface.get_size(), pygame.SRCALPHA)
+                color_flash = surface_pool.acquire(dest_surface.get_width(), dest_surface.get_height())
                 pulse_color = C.ELDRITCH_PURPLE if random.random() < 0.5 else C.CRIMSON
                 color_flash.fill((*pulse_color, int(40 * self._glitch_intensity)))
                 dest_surface.blit(color_flash, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                 surface.blit(dest_surface, (sprite_x - 10, sprite_y))
+                surface_pool.release(color_flash)
+                surface_pool.release(dest_surface)
 
         elif self._victory_state == "glitch_vanish":
             # Sprite glitches harder and harder, fading out — no implosion, just decay
@@ -430,7 +440,7 @@ class CombatRendererMixin:
                     progress = self._vanish_progress
 
                     # Build the glitched sprite: horizontal strips with severe offsets
-                    dest_surface = pygame.Surface((src_w + 40, src_h + 20), pygame.SRCALPHA)
+                    dest_surface = surface_pool.acquire(src_w + 40, src_h + 20)
                     strip_h = 3 if progress > 0.5 else 4
                     for sy in range(0, src_h, strip_h):
                         strip = enemy_sprite.subsurface((0, sy, src_w, min(strip_h, src_h - sy)))
@@ -446,7 +456,7 @@ class CombatRendererMixin:
                     # Apply per-column distortion from the wobble table
                     if len(self._vanish_distortion) > 0 and src_w > 10:
                         # Create a copy to apply column distortion
-                        distorted = pygame.Surface(dest_surface.get_size(), pygame.SRCALPHA)
+                        distorted = surface_pool.acquire(dest_surface.get_width(), dest_surface.get_height())
                         col_w = max(1, src_w // len(self._vanish_distortion))
                         for i, offset in enumerate(self._vanish_distortion):
                             col_x = 20 + i * col_w
@@ -481,9 +491,10 @@ class CombatRendererMixin:
                                 ]
                             )
                             patch_alpha = int(random.uniform(30, 100) * progress)
-                            patch_surf = pygame.Surface((patch_w, patch_h), pygame.SRCALPHA)
+                            patch_surf = surface_pool.acquire(patch_w, patch_h)
                             patch_surf.fill((*patch_color, patch_alpha))
                             dest_surface.blit(patch_surf, (20 + patch_x, patch_y))
+                            surface_pool.release(patch_surf)
 
                     # Occasional complete row deletion (sprite data dropping out)
                     if progress > 0.4:
@@ -493,12 +504,14 @@ class CombatRendererMixin:
                             drop_h = random.randint(2, 8)
                             # Erase a horizontal strip (make it transparent)
                             erase_rect = pygame.Rect(20, drop_y, src_w, drop_h)
-                            erase_surf = pygame.Surface((src_w, drop_h), pygame.SRCALPHA)
+                            erase_surf = surface_pool.acquire(src_w, drop_h)
                             dest_surface.blit(erase_surf, (20, drop_y))
+                            surface_pool.release(erase_surf)
 
                     # Apply the vanishing opacity
                     dest_surface.set_alpha(int(self._vanish_opacity))
                     surface.blit(dest_surface, (sprite_x - 20, sprite_y))
+                    surface_pool.release(dest_surface)
 
             # Glitch noise particles around the sprite area
             if self._vanish_progress > 0.3 and random.random() < self._vanish_progress * 0.4:
@@ -506,7 +519,7 @@ class CombatRendererMixin:
                 noise_y = sprite_y + random.randint(-5, int(sprite_y * 0.5))
                 noise_w = random.randint(4, 30)
                 noise_h = random.randint(2, 6)
-                noise_surf = pygame.Surface((noise_w, noise_h), pygame.SRCALPHA)
+                noise_surf = surface_pool.acquire(noise_w, noise_h)
                 noise_color = random.choice(
                     [
                         C.ELDRITCH_PURPLE,
@@ -518,6 +531,7 @@ class CombatRendererMixin:
                 noise_alpha = int(random.uniform(40, 120) * self._vanish_progress)
                 noise_surf.fill((*noise_color, noise_alpha))
                 surface.blit(noise_surf, (noise_x + ox, noise_y + oy))
+                surface_pool.release(noise_surf)
 
         elif self._victory_state == "afterimage":
             # Burned-in silhouette fading — NO sprite
@@ -537,10 +551,11 @@ class CombatRendererMixin:
                 # Flash overlay when enemy acts
                 if self._enemy_flash_timer > 0:
                     flash = enemy_sprite.copy()
-                    flash_overlay = pygame.Surface(flash.get_size(), pygame.SRCALPHA)
+                    flash_overlay = surface_pool.acquire(flash.get_width(), flash.get_height())
                     flash_overlay.fill((255, 60, 60, int(80 * (self._enemy_flash_timer / 0.25))))
                     flash.blit(flash_overlay, (0, 0))
                     surface.blit(flash, (sprite_x, sprite_y))
+                    surface_pool.release(flash_overlay)
                 else:
                     surface.blit(enemy_sprite, (sprite_x, sprite_y))
 
@@ -576,7 +591,7 @@ class CombatRendererMixin:
                 # Player hit flash effect - red flash when taking damage
                 if self._player_hit_flash > 0:
                     flash = class_sprite.copy()
-                    flash_overlay = pygame.Surface(flash.get_size(), pygame.SRCALPHA)
+                    flash_overlay = surface_pool.acquire(flash.get_width(), flash.get_height())
                     # Directional flash based on damage source (enemy is on the right)
                     if self._player_hit_direction == 1:  # Damage from right
                         flash_overlay.fill((255, 30, 30, int(100 * (self._player_hit_flash / 0.3))))
@@ -584,6 +599,7 @@ class CombatRendererMixin:
                         flash_overlay.fill((255, 50, 50, int(80 * (self._player_hit_flash / 0.3))))
                     flash.blit(flash_overlay, (0, 0))
                     surface.blit(flash, (30 + ox, 250 + oy))
+                    surface_pool.release(flash_overlay)
                 else:
                     surface.blit(class_sprite, (30 + ox, 250 + oy))
 
@@ -722,7 +738,7 @@ class CombatRendererMixin:
 
         # --- Victory vignette tightening (afterimage + fade phases) ---
         if self._victory_vignette_intensity > 0:
-            vignette = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            vignette = surface_pool.acquire(SCREEN_W, SCREEN_H)
             # Draw tight dark vignette around edges
             max_alpha = int(180 * self._victory_vignette_intensity)
             for i in range(40):
@@ -739,12 +755,14 @@ class CombatRendererMixin:
                 if rx > 0 and ry > 0:
                     pygame.draw.ellipse(vignette, color, (rx, ry, (SCREEN_W - 2 * rx), (SCREEN_H - 2 * ry)))
             surface.blit(vignette, (0, 0))
+            surface_pool.release(vignette)
 
         # --- Victory fade-to-black overlay ---
         if self._victory_fade_alpha > 0:
-            fade_surf = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            fade_surf = surface_pool.acquire(SCREEN_W, SCREEN_H)
             fade_surf.fill((0, 0, 0, self._victory_fade_alpha))
             surface.blit(fade_surf, (0, 0))
+            surface_pool.release(fade_surf)
 
         # ═══════════════════════════════════════════════════════════════════════════════
         # ELDRITCH FLOATING DAMAGE NUMBERS — Victorian Writhe System

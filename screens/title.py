@@ -24,6 +24,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from shared.game_context import GameContext
+from shared.surface_pool import surface_pool
 from screens.base import Screen
 from screens.screen_enum import ScreenName
 
@@ -101,11 +102,13 @@ class TitleScreen(Screen):
             self.ctx.quit_game()
 
     def draw(self, surface):
-        # Particles
+        # Particles — use pooled surfaces
         for p in self.particles:
-            s = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
-            s.fill((*p["color"], int(p["alpha"])))
-            surface.blit(s, (int(p["x"]), int(p["y"])))
+            sz = p["size"] * 2
+            ps = surface_pool.acquire(sz, sz)
+            ps.fill((*p["color"], int(p["alpha"])))
+            surface.blit(ps, (int(p["x"]), int(p["y"])))
+            surface_pool.release(ps)
 
         # ── Title & Subtitle (top) ──
         draw_text(

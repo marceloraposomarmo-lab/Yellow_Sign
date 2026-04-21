@@ -27,6 +27,7 @@ import random
 import pygame
 
 from shared.constants import SCREEN_W, SCREEN_H
+from shared.surface_pool import surface_pool
 
 # ═══════════════════════════════════════════
 # LIGHT SOURCE DEFINITIONS
@@ -432,7 +433,7 @@ class LightingSystem:
         the center. The darkness is tinted with a faint sickly purple-black,
         like the air itself is rotting in the depths of the Spiral.
         """
-        darkness = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        darkness = surface_pool.acquire(SCREEN_W, SCREEN_H)
         num_rings = 30
         max_rx = SCREEN_W // 2 + 100
         max_ry = SCREEN_H // 2 + 60
@@ -450,6 +451,7 @@ class LightingSystem:
                 (SCREEN_W // 2 - rx, SCREEN_H // 2 - ry, rx * 2, ry * 2),
             )
         self._overlay.blit(darkness, (0, 0))
+        surface_pool.release(darkness)
 
     def _draw_hp_vignette(self, time_seconds: float):
         """Draw an oppressive vignette that closes in as HP drops.
@@ -483,7 +485,7 @@ class LightingSystem:
         g = 0
         b = int(5 * crimson_factor)
 
-        vignette = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        vignette = surface_pool.acquire(SCREEN_W, SCREEN_H)
         num_rings = 40
         max_rx = SCREEN_W // 2 + 60
         max_ry = SCREEN_H // 2 + 40
@@ -500,6 +502,7 @@ class LightingSystem:
                 (SCREEN_W // 2 - rx, SCREEN_H // 2 - ry, rx * 2, ry * 2),
             )
         self._overlay.blit(vignette, (0, 0))
+        surface_pool.release(vignette)
 
     def _draw_status_edge_glow(self, time_seconds: float):
         """Draw barely perceptible color whispers at screen edges.
@@ -524,7 +527,7 @@ class LightingSystem:
             pulse = 0.5 + 0.5 * math.sin(time_seconds * 0.8 + hash(status) % 100)
             alpha = int(4 + 8 * pulse)  # Range: 4-12 (was 25-60)
 
-            glow = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            glow = surface_pool.acquire(SCREEN_W, SCREEN_H)
 
             # Different edge emphasis per status type
             if status == "burning":
@@ -561,6 +564,7 @@ class LightingSystem:
                     pygame.draw.rect(glow, (*color, a), (i, i, SCREEN_W - i * 2, SCREEN_H - i * 2), 1)
 
             self._overlay.blit(glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            surface_pool.release(glow)
 
     def _draw_light_source(self, x: int, y: int, radius: int, color: tuple, intensity: float):
         """Draw a single light source as an additive glow.
@@ -608,7 +612,7 @@ class LightingSystem:
         g = int(6 * combined_pulse)
         b = int(30 * combined_pulse)
 
-        pulse_surf = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        pulse_surf = surface_pool.acquire(SCREEN_W, SCREEN_H)
         num_rings = 20
         for i in range(num_rings):
             ratio = i / num_rings
@@ -623,6 +627,7 @@ class LightingSystem:
                 (SCREEN_W // 2 - rx, SCREEN_H // 2 - ry, rx * 2, ry * 2),
             )
         self._overlay.blit(pulse_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+        surface_pool.release(pulse_surf)
 
     def _draw_ambient_breathing(self, time_seconds: float, depth_alpha: int):
         """Draw an imperceptible light/dark breathing cycle.
@@ -647,15 +652,12 @@ class LightingSystem:
         if abs(mod) < 2:
             return
 
-        breath_surf = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+        breath_surf = surface_pool.acquire(SCREEN_W, SCREEN_H)
         if mod > 0:
             # Darkness inhales — grows slightly darker
             breath_surf.fill((3, 1, 6, mod))
-        else:
-            breath_surf.fill((0, 0, 0, 0))
-
-        if mod > 0:
             self._overlay.blit(breath_surf, (0, 0))
+        surface_pool.release(breath_surf)
 
 
 # ═══════════════════════════════════════════

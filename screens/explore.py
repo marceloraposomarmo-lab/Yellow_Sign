@@ -26,6 +26,7 @@ from shared import (
     draw_madness_vignette,
 )
 from shared.game_context import GameContext
+from shared.surface_pool import surface_pool
 import random
 from screens.base import Screen
 from screens.screen_enum import ScreenName
@@ -211,11 +212,13 @@ class ExploreScreen(Screen):
         s = self.ctx.state
         draw_hud(surface, s, self.assets)
 
-        # Dust particles (drawn behind UI)
+        # Dust particles (drawn behind UI) — use pooled surfaces
         for p in self.particles:
-            ps = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
+            sz = p["size"] * 2
+            ps = surface_pool.acquire(sz, sz)
             ps.fill((180, 170, 150, int(p["alpha"])))
             surface.blit(ps, (int(p["x"]), int(p["y"])))
+            surface_pool.release(ps)
 
         is_boss = s.floor >= s.max_floor
 
@@ -260,9 +263,10 @@ class ExploreScreen(Screen):
                 border_col = C.YELLOW if hovered else C.PARCHMENT_EDGE
                 pygame.draw.rect(surface, border_col, btn, 2, border_radius=4)
                 if hovered:
-                    glow = pygame.Surface((btn.w + 10, btn.h + 10), pygame.SRCALPHA)
+                    glow = surface_pool.acquire(btn.w + 10, btn.h + 10)
                     glow.fill((120, 80, 200, 40))
                     surface.blit(glow, (btn.x - 5, btn.y - 5))
+                    surface_pool.release(glow)
 
                 # Icon on top-center of the card
                 icon_key = f"path_{ptype}"

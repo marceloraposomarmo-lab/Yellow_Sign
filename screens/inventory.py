@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from shared.game_context import GameContext
+from shared.surface_pool import surface_pool
 from screens.base import Screen
 from screens.screen_enum import ScreenName
 
@@ -124,11 +125,12 @@ class InventoryScreen(Screen):
                 color = rarity_color(item.rarity)
                 btn = pygame.Rect(60, y, SCREEN_W - 130, item_h)
                 self.item_buttons.append(btn)
-                # Hover highlight on item row
+                # Hover highlight on item row — use pooled surface
                 if i == self.hover_idx:
-                    row_bg = pygame.Surface((btn.w, btn.h), pygame.SRCALPHA)
+                    row_bg = surface_pool.acquire(btn.w, btn.h)
                     row_bg.fill((212, 160, 23, 30))
                     surface.blit(row_bg, (btn.x, btn.y))
+                    surface_pool.release(row_bg)
                     pygame.draw.rect(surface, C.GOLD_TRIM, btn, 1, border_radius=3)
                 # Line 1: item name + slot (pixel-width truncated)
                 label = f"{i+1}. {item.name} ({item.slot.upper()})"

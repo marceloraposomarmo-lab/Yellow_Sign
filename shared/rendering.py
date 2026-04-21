@@ -7,6 +7,7 @@ import math
 import random
 import pygame
 from shared.constants import C, SCREEN_W, SCREEN_H, CLASS_COLORS
+from shared.surface_pool import surface_pool, render_cache
 from data import CLASS_ICONS
 from data.buff_debuff_data import get_effect_info
 
@@ -256,15 +257,17 @@ def draw_ornate_button(
         eased_pulse = ease_in_out_quad(pulse_factor)
         pulse_alpha = int(20 + 50 * eased_pulse)
 
-        glow = pygame.Surface((rect.w + 12, rect.h + 12), pygame.SRCALPHA)
+        # Use pooled surface instead of allocating each frame
+        glow = surface_pool.acquire(rect.w + 12, rect.h + 12)
         glow.fill((120, 80, 200, pulse_alpha))
         surface.blit(glow, (rect.x - 6, rect.y - 6))
 
         border_pulse = int(eased_pulse)
         if border_pulse:
-            gold_glow = pygame.Surface((rect.w + 6, rect.h + 6), pygame.SRCALPHA)
+            gold_glow = surface_pool.acquire(rect.w + 6, rect.h + 6)
             gold_glow.fill((212, 160, 23, 35))
             surface.blit(gold_glow, (rect.x - 3, rect.y - 3))
+            surface_pool.release(gold_glow)
 
         # Shimmer effect with smooth phase calculation
         shimmer_phase = (t * shimmer_speed) % 3.0
@@ -272,9 +275,12 @@ def draw_ornate_button(
             # Use cubic easing for smoother shimmer movement
             shimmer_t = ease_out_cubic(shimmer_phase)
             shimmer_x = rect.x - 20 + int((rect.w + 40) * shimmer_t)
-            shimmer = pygame.Surface((20, rect.h + 4), pygame.SRCALPHA)
+            shimmer = surface_pool.acquire(20, rect.h + 4)
             shimmer.fill((255, 220, 100, 25))
             surface.blit(shimmer, (shimmer_x, rect.y - 2))
+            surface_pool.release(shimmer)
+
+        surface_pool.release(glow)
 
 
 def draw_gold_divider(surface, x, y, width):
@@ -340,11 +346,15 @@ def draw_status_icon(surface, x, y, effect_type, duration=0, size=22):
     pygame.draw.circle(surface, bg_color, (cx, cy), radius)
     pygame.draw.circle(surface, color, (cx, cy), radius, 2)
 
-    # Inner highlight
-    highlight = pygame.Surface((size, size), pygame.SRCALPHA)
-    for r in range(radius - 1, 0, -1):
-        alpha = int(20 * (1 - r / radius))
-        pygame.draw.circle(highlight, (*color, alpha), (radius, radius), r)
+    # Cached highlight circle — same (size, color) always produces identical output
+    highlight_key = ("status_hl", size, color)
+    highlight = render_cache.get(highlight_key)
+    if highlight is None:
+        highlight = pygame.Surface((size, size), pygame.SRCALPHA)
+        for r in range(radius - 1, 0, -1):
+            alpha = int(20 * (1 - r / radius))
+            pygame.draw.circle(highlight, (*color, alpha), (radius, radius), r)
+        render_cache.put(highlight_key, highlight)
     surface.blit(highlight, (x, y))
 
     # Letter text
@@ -360,10 +370,11 @@ def draw_status_icon(surface, x, y, effect_type, duration=0, size=22):
         dur_text = str(duration)
         dur_surf = dur_font.render(dur_text, True, (255, 255, 200))
         dur_rect = dur_surf.get_rect(bottomright=(x + size - 1, y + size))
-        # Dark background for readability
-        bg_dur = pygame.Surface((dur_rect.w + 2, dur_rect.h + 1), pygame.SRCALPHA)
+        # Dark background for readability — use pooled surface
+        bg_dur = surface_pool.acquire(dur_rect.w + 2, dur_rect.h + 1)
         bg_dur.fill((0, 0, 0, 160))
         surface.blit(bg_dur, (dur_rect.x - 1, dur_rect.y - 1))
+        surface_pool.release(bg_dur)
         surface.blit(dur_surf, dur_rect)
 
     return pygame.Rect(x, y, size, size)
@@ -469,10 +480,11 @@ def draw_status_tooltip(surface, effect_type, icon_rect, font=None):
     if tip_x + tip_w > SCREEN_W - 5:
         tip_x = SCREEN_W - tip_w - 5
 
-    # Background
-    bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+    # Background — use pooled surface instead of allocating each frame
+    bg = surface_pool.acquire(tip_w, tip_h)
     bg.fill((10, 8, 20, 235))
     surface.blit(bg, (tip_x, tip_y))
+    surface_pool.release(bg)
     pygame.draw.rect(surface, info["color"], (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
     pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x + 1, tip_y + 1, tip_w - 2, tip_h - 2), 1, border_radius=2)
 
@@ -628,8 +640,27 @@ def _generate_obsidian_tile():
     return surf
 
 
+# Pre-rendered HUD background — created once, reused every frame
+_HUD_BG_KEY = ("hud_bg", SCREEN_W, 120)
+
+
 def generate_parchment_texture(width, height):
-    """Generate a panel texture by tiling the master obsidian tile, then adding per-panel effects."""
+    """Generate a panel texture by tiling the master obsidian tile, then adding per-panel effects.
+
+    Results are cached by (width, height) so that the expensive random-symbol
+    generation, edge glow, and vignette drawing only happen once per unique
+    panel size.  Subsequent calls return the cached surface instantly.
+
+    Callers that modify the returned surface with ``set_alpha()`` are safe:
+    the cache resets per-surface alpha before each return, and pixel data
+    is never mutated.
+    """
+    cache_key = ("parchment_tex", width, height)
+    cached = render_cache.get(cache_key)
+    if cached is not None:
+        cached.set_alpha(None)  # Reset any per-surface alpha from previous caller
+        return cached
+
     tile = _generate_obsidian_tile()
     tile_w, tile_h = tile.get_size()
 
@@ -685,6 +716,7 @@ def generate_parchment_texture(width, height):
         pygame.draw.line(vig, (0, 0, 0, alpha), (0, height - 1 - i), (width, height - 1 - i))
     surf.blit(vig, (0, 0))
 
+    render_cache.put(cache_key, surf)
     return surf
 
 
@@ -710,12 +742,13 @@ def draw_parchment_panel(surface, x, y, w, h, title=None, title_font=None, anima
         eased_pulse = ease_in_out_quad(pulse)
         glow_alpha = int(40 + 30 * eased_pulse)
 
-        # Subtle outer glow
-        glow_surf = pygame.Surface((w + 10, h + 10), pygame.SRCALPHA)
+        # Subtle outer glow — use pooled surface
+        glow_surf = surface_pool.acquire(w + 10, h + 10)
         for i in range(5):
             alpha = int((5 - i) * glow_alpha * 0.3)
             pygame.draw.rect(glow_surf, (*C.GOLD_TRIM[:3], alpha), (5 - i, 5 - i, w + i * 2, h + i * 2), 1)
         surface.blit(glow_surf, (x - 5, y - 5))
+        surface_pool.release(glow_surf)
 
     pygame.draw.rect(surface, C.OBSIDIAN_EDGE, (x, y, w, h), 3, border_radius=4)
     pygame.draw.rect(surface, C.GOLD_TRIM, (x + 4, y + 4, w - 8, h - 8), 2, border_radius=3)
@@ -1002,7 +1035,7 @@ def draw_eldritch_aura(surface, rect, time_seconds, intensity=1.0, color=None):
     # Expand rect for aura layers
     max_expand = int(20 * intensity)
 
-    # Draw multiple expanding layers for gradient effect
+    # Draw multiple expanding layers for gradient effect — use pooled surfaces
     for i in range(5, 0, -1):
         layer_ratio = i / 5.0
         expand = int(max_expand * layer_ratio * eased_pulse)
@@ -1018,19 +1051,21 @@ def draw_eldritch_aura(surface, rect, time_seconds, intensity=1.0, color=None):
         g = int(base_color[1] * layer_ratio + accent_color[1] * (1 - layer_ratio))
         b = int(base_color[2] * layer_ratio + accent_color[2] * (1 - layer_ratio))
 
-        aura_surf = pygame.Surface((aura_rect.w, aura_rect.h), pygame.SRCALPHA)
+        aura_surf = surface_pool.acquire(aura_rect.w, aura_rect.h)
         pygame.draw.rect(aura_surf, (r, g, b, alpha), (0, 0, aura_rect.w, aura_rect.h), border_radius=8)
         surface.blit(aura_surf, (aura_rect.x, aura_rect.y))
+        surface_pool.release(aura_surf)
 
-    # Occasional spark particles for extra eldritch feel
+    # Occasional spark particles for extra eldritch feel — use pooled surface
     if random.random() < 0.02 * intensity:
         spark_x = rect.x + random.randint(-max_expand, rect.w + max_expand)
         spark_y = rect.y + random.randint(-max_expand, rect.h + max_expand)
         spark_size = random.randint(2, 4)
-        spark_surf = pygame.Surface((spark_size * 2, spark_size * 2), pygame.SRCALPHA)
+        spark_surf = surface_pool.acquire(spark_size * 2, spark_size * 2)
         spark_color = (200, 160, 255, random.randint(100, 200))
         pygame.draw.circle(spark_surf, spark_color, (spark_size, spark_size), spark_size)
         surface.blit(spark_surf, (spark_x - spark_size, spark_y - spark_size))
+        surface_pool.release(spark_surf)
 
 
 # ═══════════════════════════════════════════
@@ -1041,9 +1076,13 @@ def draw_eldritch_aura(surface, rect, time_seconds, intensity=1.0, color=None):
 def draw_hud(surface, s, assets):
     """Draw the persistent HUD bar at the top with ornate styling."""
     hud_h = 120
-    hud_surf = pygame.Surface((SCREEN_W, hud_h), pygame.SRCALPHA)
-    hud_surf.fill((12, 6, 24, 220))
-    surface.blit(hud_surf, (0, 0))
+    # Cache the HUD background surface — it never changes
+    hud_bg = render_cache.get(_HUD_BG_KEY)
+    if hud_bg is None:
+        hud_bg = pygame.Surface((SCREEN_W, hud_h), pygame.SRCALPHA)
+        hud_bg.fill((12, 6, 24, 220))
+        render_cache.put(_HUD_BG_KEY, hud_bg)
+    surface.blit(hud_bg, (0, 0))
     pygame.draw.line(surface, C.GOLD_TRIM, (10, hud_h - 2), (SCREEN_W - 10, hud_h - 2), 2)
     pygame.draw.line(surface, C.GOLD_DIM, (10, hud_h - 5), (SCREEN_W - 10, hud_h - 5), 1)
 

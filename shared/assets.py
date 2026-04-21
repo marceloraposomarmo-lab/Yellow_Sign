@@ -17,6 +17,7 @@ from shared.constants import (
 )
 from data import ENEMY_SPRITES, STAT_ICONS
 from shared.logger import get_logger
+from shared.surface_pool import render_cache
 
 logger = get_logger("assets")
 
@@ -27,6 +28,7 @@ class Assets:
         self.fonts = {}
         self.cursor = None
         self._font_paths = {}  # Store font file paths for dynamic scaling
+        self._bg_cache: dict[str, pygame.Surface] = {}  # Cached darkened backgrounds
         try:
             self.load()
         except Exception as e:
@@ -302,6 +304,13 @@ class Assets:
             bg = self.images.get("bg_dungeon")
         if not bg:
             return None
+
+        # Cache the darkened background by screen type
+        cache_key = f"bg_{screen}"
+        cached = self._bg_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
         if screen == "gameover":
             overlay.fill((0, 0, 0, 100))
@@ -309,6 +318,7 @@ class Assets:
             overlay.fill((0, 0, 0, 140))
         result = bg.copy()
         result.blit(overlay, (0, 0))
+        self._bg_cache[cache_key] = result
         return result
 
     def get_sprite(self, enemy_name):

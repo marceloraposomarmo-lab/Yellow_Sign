@@ -23,6 +23,7 @@ from shared import (
     draw_text_fitted_glow,
 )
 from shared.game_context import GameContext
+from shared.surface_pool import surface_pool
 from screens.base import Screen
 from screens.screen_enum import ScreenName
 from data import MAX_ACTIVE_SKILLS
@@ -143,9 +144,10 @@ class LevelUpScreen(Screen):
         tip_y = btn_rect.y - tip_h - 4
         if tip_y < 10:
             tip_y = btn_rect.bottom + 4
-        bg = pygame.Surface((tip_w, tip_h), pygame.SRCALPHA)
+        bg = surface_pool.acquire(tip_w, tip_h)
         bg.fill((10, 8, 20, 230))
         surface.blit(bg, (tip_x, tip_y))
+        surface_pool.release(bg)
         pygame.draw.rect(surface, C.PARCHMENT_EDGE, (tip_x, tip_y, tip_w, tip_h), 1, border_radius=3)
         for i, l in enumerate(lines):
             lc = C.PARCHMENT_EDGE if i == len(lines) - 1 else C.INK
