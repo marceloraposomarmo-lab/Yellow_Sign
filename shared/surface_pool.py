@@ -11,7 +11,7 @@ Two complementary systems:
 
 Allocation hotspots addressed:
 - Particles: one pygame.Surface per particle per frame → pooled
-- Parchment textures: ~9 surface allocations per call → cached by (w, h)
+- Parchment textures: full texture cached by (w, h) — zero per-frame allocation
 - Button hover effects: 2-3 surfaces per hovered button per frame → pooled
 - Combat overlays: glitch, flash, tooltip, intent panel → pooled
 - Lighting system: full-screen scratch surfaces (~3.5 MB each) → pooled
