@@ -16,7 +16,7 @@ Sound palette (BNA horror UI + Unholy Souls — Lovecraftian selection):
   loot        — BNA_UI11  |  Dice & coin clatter, loot chest opening
   equip       — Unholy_Souls_13  |  Metallic blade shing, weapon equipping
   purchase    — BNA_UI12  |  Bubbly rising chime, shop transaction
-  combat_start — Unholy_Souls_16  |  Heavy stone thud, ominous dungeon impact
+  combat_start — Monster_Mech  |  Guttural beast growl, menacing pre-combat dread
   event_mystery — Unholy_Souls_10  |  Deep hollow resonance, eldritch mystery
 
 Architecture:
@@ -66,7 +66,7 @@ _SOUND_FILES: Dict[str, str] = {
     "loot":          "BNA_UI11.wav",
     "equip":         "Unholy_Souls_13.wav",
     "purchase":      "BNA_UI12.wav",
-    "combat_start":  "Unholy_Souls_16.wav",
+    "combat_start":  "Monster_Mech.wav",
     "event_mystery": "Unholy_Souls_10.wav",
 }
 
