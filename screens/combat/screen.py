@@ -567,9 +567,11 @@ class CombatScreen(CombatRendererMixin, Screen):
             for i, btn in enumerate(self.skill_buttons):
                 if btn.collidepoint(event.pos):
                     if i < len(s.active_skills):
+                        self.play_click()
                         self._use_skill(i)
             for name, btn in self.cmd_buttons.items():
                 if btn.collidepoint(event.pos):
+                    self.play_click()
                     if name == "run":
                         self._try_run()
                     elif name == "inventory":
@@ -580,12 +582,16 @@ class CombatScreen(CombatRendererMixin, Screen):
             if pygame.K_1 <= event.key <= pygame.K_9:
                 idx = event.key - pygame.K_1
                 if idx < len(s.active_skills):
+                    self.play_click()
                     self._use_skill(idx)
             elif event.key == pygame.K_r:
+                self.play_click()
                 self._try_run()
             elif event.key == pygame.K_i:
+                self.play_click()
                 self.ctx.navigate(ScreenName.INVENTORY)
             elif event.key == pygame.K_s:
+                self.play_click()
                 self.ctx.navigate(ScreenName.SAVE)
 
     def _use_skill(self, idx):

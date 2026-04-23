@@ -57,9 +57,11 @@ class RestScreen(Screen):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.buttons):
                 if btn.collidepoint(event.pos):
+                    self.play_confirm()
                     self._do_rest(i)
         elif event.type == pygame.KEYDOWN:
             if pygame.K_1 <= event.key <= pygame.K_3:
+                self.play_confirm()
                 self._do_rest(event.key - pygame.K_1)
 
     def _do_rest(self, idx):

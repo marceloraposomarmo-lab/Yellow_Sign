@@ -287,8 +287,8 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 ### P3 — Polish & Content
 
 #### Audio System
-- [ ] Create `shared/audio.py` — AudioManager class with SFX/music/ambient layers
-- [ ] UI sounds: hover, click, confirm, cancel
+- [x] Create `shared/audio.py` — AudioManager class with procedural SFX generation
+- [x] UI sounds: hover, click, confirm, cancel, error
 - [ ] Combat audio: hit, crit, spell cast, block, enemy death
 - [ ] Ambient soundscapes per floor type
 - [ ] Dynamic music layers that intensify during combat or at low HP

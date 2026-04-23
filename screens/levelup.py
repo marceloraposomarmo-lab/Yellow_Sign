@@ -53,6 +53,7 @@ class LevelUpScreen(Screen):
         s = self.ctx.state
         if not s.pending_levelup_skills:
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
+                self.play_confirm()
                 self.ctx.navigate(ScreenName.EXPLORE)
             return
 
@@ -61,6 +62,7 @@ class LevelUpScreen(Screen):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, btn in enumerate(self.replace_buttons):
                     if btn.collidepoint(event.pos):
+                        self.play_confirm()
                         if i < len(s.active_skills):
                             chosen = s.pending_levelup_skills[0]
                             s.active_skills[i] = chosen
@@ -74,6 +76,7 @@ class LevelUpScreen(Screen):
             elif event.type == pygame.KEYDOWN:
                 if pygame.K_1 <= event.key <= pygame.K_9:
                     idx = event.key - pygame.K_1
+                    self.play_confirm()
                     if idx < len(s.active_skills):
                         chosen = s.pending_levelup_skills[0]
                         s.active_skills[idx] = chosen
@@ -90,16 +93,20 @@ class LevelUpScreen(Screen):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.skill_buttons):
                 if btn.collidepoint(event.pos) and i < len(s.pending_levelup_skills):
+                    self.play_confirm()
                     self._pick_skill(i)
             if self.skip_btn and self.skip_btn.collidepoint(event.pos):
+                self.play_cancel()
                 s.pending_levelup_skills = []
                 self.ctx.navigate(ScreenName.EXPLORE)
         elif event.type == pygame.KEYDOWN:
             if pygame.K_1 <= event.key <= pygame.K_9:
                 idx = event.key - pygame.K_1
                 if idx < len(s.pending_levelup_skills):
+                    self.play_confirm()
                     self._pick_skill(idx)
                 elif idx == len(s.pending_levelup_skills):
+                    self.play_cancel()
                     s.pending_levelup_skills = []
                     self.ctx.navigate(ScreenName.EXPLORE)
 

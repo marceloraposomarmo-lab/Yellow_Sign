@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from shared.logger import configure_logging, get_logger, shutdown as shutdown_logging
 from shared.game_context import GameContext
+from shared.audio import AudioManager
 from config import get_settings
 
 # ═══════════════════════════════════════════
@@ -137,6 +138,11 @@ class Game:
 
         self.state = None
 
+        # ── Audio System ──────────────────────────────────────────────────────
+        audio_vol = settings.get("audio.master_volume", 0.5)
+        self.audio = AudioManager(master_volume=audio_vol)
+        logger.info("Audio: %s", self.audio)
+
         # ── Service Locator / Dependency Injection ─────────────────────────
         # Create a GameContext that decouples screens from this Game class.
         # Screens receive the context instead of a direct Game reference,
@@ -151,6 +157,7 @@ class Game:
             get_prev_screen=lambda: getattr(self, "_prev_screen_name", None),
             get_time_seconds=lambda: self.time_seconds,
             get_fullscreen=lambda: self.fullscreen,
+            audio=self.audio,
         )
 
         # Screens — keyed by ScreenName enum for type safety

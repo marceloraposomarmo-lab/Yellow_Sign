@@ -37,6 +37,7 @@ class TrapResultScreen(Screen):
         if event.type == pygame.KEYDOWN or (
             event.type == pygame.MOUSEBUTTONDOWN and self.continue_btn and self.continue_btn.collidepoint(event.pos)
         ):
+            self.play_confirm()
             self.ctx.navigate(ScreenName.EXPLORE)
 
     def draw(self, surface):

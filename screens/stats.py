@@ -41,9 +41,11 @@ class StatsScreen(Screen):
         self.update_hover(event, all_btns)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                self.play_cancel()
                 self.ctx.navigate(ScreenName.EXPLORE)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.back_btn and self.back_btn.collidepoint(event.pos):
+                self.play_cancel()
                 self.ctx.navigate(ScreenName.EXPLORE)
 
     def draw(self, surface):

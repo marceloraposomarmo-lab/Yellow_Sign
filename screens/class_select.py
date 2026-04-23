@@ -45,6 +45,8 @@ class ClassSelectScreen(Screen):
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             mx, my = event.pos
+            old_ability = self.hovered_ability
+            old_future = self.hovered_future
             self.hovered_ability = -1
             self.hovered_future = -1
             if self.start_btn and self.start_btn.collidepoint(mx, my):
@@ -53,23 +55,31 @@ class ClassSelectScreen(Screen):
             for i, btn in enumerate(self.ability_btns):
                 if btn.collidepoint(mx, my):
                     self.hovered_ability = i
-                    return
+                    break
             # Check future ability hover
             for i, btn in enumerate(self.future_btns):
                 if btn.collidepoint(mx, my):
                     self.hovered_future = i
-                    return
+                    break
+            if self.hovered_ability != old_ability or self.hovered_future != old_future:
+                if self.hovered_ability >= 0 or self.hovered_future >= 0:
+                    self._play_sound("hover")
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.start_btn and self.start_btn.collidepoint(event.pos):
+                self.play_confirm()
                 self._pick_class()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.selected = (self.selected - 1) % len(self.class_ids)
+                self._play_sound("hover")
             elif event.key == pygame.K_RIGHT:
                 self.selected = (self.selected + 1) % len(self.class_ids)
+                self._play_sound("hover")
             elif event.key == pygame.K_RETURN:
+                self.play_confirm()
                 self._pick_class()
             elif event.key == pygame.K_ESCAPE:
+                self.play_cancel()
                 self.ctx.navigate(ScreenName.TITLE)
 
     def _pick_class(self):

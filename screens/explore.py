@@ -136,9 +136,11 @@ class ExploreScreen(Screen):
             if self.narrative_complete:
                 for i, btn in enumerate(self.path_buttons):
                     if btn.collidepoint(event.pos):
+                        self.play_click()
                         self._choose_path(i)
                 for name, btn in self.cmd_buttons.items():
                     if btn.collidepoint(event.pos):
+                        self.play_click()
                         if name == "inventory":
                             self.ctx.navigate(ScreenName.INVENTORY)
                         elif name == "stats":
@@ -146,6 +148,7 @@ class ExploreScreen(Screen):
                         elif name == "save":
                             self.ctx.navigate(ScreenName.SAVE)
                         elif name == "menu":
+                            self.play_cancel()
                             self.ctx.navigate(ScreenName.TITLE)
         elif event.type == pygame.KEYDOWN:
             # Only allow keyboard interaction when narrative is complete
@@ -153,12 +156,16 @@ class ExploreScreen(Screen):
                 if pygame.K_1 <= event.key <= pygame.K_9:
                     idx = event.key - pygame.K_1
                     if idx < len(self.paths):
+                        self.play_click()
                         self._choose_path(idx)
                 elif event.key == pygame.K_i:
+                    self.play_click()
                     self.ctx.navigate(ScreenName.INVENTORY)
                 elif event.key == pygame.K_t:
+                    self.play_click()
                     self.ctx.navigate(ScreenName.STATS)
                 elif event.key == pygame.K_s:
+                    self.play_click()
                     self.ctx.navigate(ScreenName.SAVE)
 
     def _choose_path(self, idx):

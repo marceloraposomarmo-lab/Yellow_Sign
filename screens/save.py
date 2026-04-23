@@ -60,13 +60,16 @@ class SaveScreen(Screen):
         self.update_hover(event, all_btns)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                self.play_cancel()
                 self.ctx.navigate(self._get_return_screen())
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.back_btn and self.back_btn.collidepoint(event.pos):
+                self.play_cancel()
                 self.ctx.navigate(self._get_return_screen())
                 return
             for i, btn in enumerate(self.slot_buttons):
                 if btn.collidepoint(event.pos):
+                    self.play_confirm()
                     self._do_slot(i)
 
     def _do_slot(self, slot):

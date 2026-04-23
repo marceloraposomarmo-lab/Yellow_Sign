@@ -76,19 +76,27 @@ class TitleScreen(Screen):
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
+            old_selected = self.selected
             for i, btn in enumerate(self.buttons):
                 if btn.collidepoint(event.pos):
                     self.selected = i
+                    break
+            if self.selected != old_selected:
+                self._play_sound("hover")
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.buttons):
                 if btn.collidepoint(event.pos):
+                    self.play_click()
                     self._select(i)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 self.selected = (self.selected - 1) % len(self.options)
+                self._play_sound("hover")
             elif event.key == pygame.K_DOWN:
                 self.selected = (self.selected + 1) % len(self.options)
+                self._play_sound("hover")
             elif event.key == pygame.K_RETURN:
+                self.play_click()
                 self._select(self.selected)
 
     def _select(self, idx):

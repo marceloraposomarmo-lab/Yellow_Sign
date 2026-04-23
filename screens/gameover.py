@@ -42,13 +42,17 @@ class GameOverScreen(Screen):
         self.update_hover(event, btns)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.restart_btn and self.restart_btn.collidepoint(event.pos):
+                self.play_click()
                 self.ctx.navigate(ScreenName.CLASS_SELECT)
             elif self.menu_btn and self.menu_btn.collidepoint(event.pos):
+                self.play_click()
                 self.ctx.navigate(ScreenName.TITLE)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
+                self.play_click()
                 self.ctx.navigate(ScreenName.CLASS_SELECT)
             elif event.key == pygame.K_q:
+                self.play_click()
                 self.ctx.navigate(ScreenName.TITLE)
 
     def draw(self, surface):

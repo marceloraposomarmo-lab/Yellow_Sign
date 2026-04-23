@@ -27,6 +27,7 @@ TEST_MODULES = [
     ("Property-Based Tests", "tests.test_property_based", "hypothesis"),
     ("Save/Load Tests", "tests.test_save_load", None),
     ("Integration Tests", "tests.test_integration", None),
+    ("Audio Tests", "tests.test_audio", None),
 ]
 
 

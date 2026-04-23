@@ -44,6 +44,7 @@ class CombatResultScreen(Screen):
         r = self.ctx.screen_data["combat_result"]
         if self.chosen:
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
+                self.play_confirm()
                 if r["is_boss"]:
                     self.ctx.navigate(ScreenName.VICTORY)
                 elif advance_floor(s):
@@ -61,13 +62,17 @@ class CombatResultScreen(Screen):
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_1:
+                self.play_confirm()
                 self._equip_loot()
             elif event.key == pygame.K_2:
+                self.play_confirm()
                 self._store_loot()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.equip_btn and self.equip_btn.collidepoint(event.pos):
+                self.play_confirm()
                 self._equip_loot()
             elif self.backpack_btn and self.backpack_btn.collidepoint(event.pos):
+                self.play_confirm()
                 self._store_loot()
 
     def _equip_loot(self):

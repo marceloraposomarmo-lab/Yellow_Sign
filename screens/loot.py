@@ -61,6 +61,7 @@ class LootScreen(Screen):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.pick_buttons):
                 if btn.collidepoint(event.pos) and i < len(self.items):
+                    self.play_confirm()
                     if len(s.inventory) < 20:
                         s.inventory.append(self.items[i])
                     else:
@@ -70,6 +71,7 @@ class LootScreen(Screen):
                     self.ctx.navigate(ScreenName.EXPLORE)
                     return
             if self.leave_btn and self.leave_btn.collidepoint(event.pos):
+                self.play_cancel()
                 self.ctx.navigate(ScreenName.EXPLORE)
 
     def draw(self, surface):

@@ -11,6 +11,11 @@
     "vsync": true
   },
 
+  "audio": {
+    "master_volume": 0.5,
+    "muted": false
+  },
+
   "gameplay": {
     "max_floor": 20,
     "save_slots": 5

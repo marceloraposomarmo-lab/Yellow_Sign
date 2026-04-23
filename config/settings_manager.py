@@ -43,6 +43,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "fullscreen": False,
         "vsync": True,
     },
+    "audio": {
+        "master_volume": 0.5,
+        "muted": False,
+    },
     "gameplay": {
         "max_floor": 20,
         "save_slots": 5,

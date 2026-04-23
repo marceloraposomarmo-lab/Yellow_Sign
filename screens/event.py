@@ -67,6 +67,7 @@ class EventScreen(Screen):
         s = self.ctx.state
         if self.showing_result:
             if event.type == pygame.KEYDOWN or (event.type == pygame.MOUSEBUTTONDOWN):
+                self.play_confirm()
                 if s.hp <= 0:
                     self.ctx.screen_data["gameover_msg"] = "The asylum claims another victim."
                     self.ctx.navigate(ScreenName.GAMEOVER)
@@ -87,6 +88,7 @@ class EventScreen(Screen):
             if self.narrative_complete:
                 for i, btn in enumerate(self.outcome_buttons):
                     if btn.collidepoint(event.pos) and i < len(pe["outcomes"]):
+                        self.play_click()
                         self._resolve(i)
         elif event.type == pygame.KEYDOWN:
             # Only allow keyboard selection when narrative is complete
@@ -94,6 +96,7 @@ class EventScreen(Screen):
                 if pygame.K_1 <= event.key <= pygame.K_9:
                     idx = event.key - pygame.K_1
                     if idx < len(pe["outcomes"]):
+                        self.play_click()
                         self._resolve(idx)
 
     def _resolve(self, idx):

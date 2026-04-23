@@ -49,12 +49,15 @@ class InventoryScreen(Screen):
         self.update_hover(event, all_btns)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                self.play_cancel()
                 self.ctx.navigate(self.prev_screen)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.back_btn and self.back_btn.collidepoint(event.pos):
+                self.play_cancel()
                 self.ctx.navigate(self.prev_screen)
             for i, btn in enumerate(self.item_buttons):
                 if btn.collidepoint(event.pos) and i < len(s.inventory):
+                    self.play_confirm()
                     item = s.inventory[i]
                     prev = s.equip_item(item)
                     s.inventory.pop(i)

@@ -98,6 +98,7 @@ class GameContext:
         get_prev_screen: Optional[Callable[[], Optional[ScreenName]]] = None,
         get_time_seconds: Optional[Callable[[], float]] = None,
         get_fullscreen: Optional[Callable[[], bool]] = None,
+        audio: Optional[Any] = None,
     ) -> None:
         self._get_state = get_state
         self._set_state = set_state
@@ -108,6 +109,7 @@ class GameContext:
         self._get_prev_screen = get_prev_screen
         self._get_time_seconds = get_time_seconds
         self._get_fullscreen = get_fullscreen
+        self._audio = audio
 
         # Generic screen-to-screen data bus.
         # Replaces the former individual Game attributes:
@@ -136,6 +138,13 @@ class GameContext:
     def assets(self):
         """The shared asset loader (fonts, images, sprites, cursor)."""
         return self._assets
+
+    # ── Audio ─────────────────────────────────────────────────────────────────
+
+    @property
+    def audio(self):
+        """The audio manager for playing UI sound effects (may be ``None``)."""
+        return self._audio
 
     # ── Navigation ────────────────────────────────────────────────────────────
 

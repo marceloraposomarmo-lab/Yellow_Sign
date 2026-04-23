@@ -83,6 +83,9 @@ from shared.logger import get_logger, configure_logging, set_level, shutdown as 
 # Service locator / dependency injection
 from shared.game_context import GameContext
 
+# Audio manager — procedural UI sound effects
+from shared.audio import AudioManager
+
 # Also re-export data imports that were previously in shared.py's namespace
 # (screens import these from shared, not from data directly)
 from data import CLASS_ICONS
