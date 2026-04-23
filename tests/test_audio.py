@@ -12,25 +12,42 @@ import math
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared.audio import AudioManager
+from shared.audio import AudioManager, _SOUND_FILES, _FALLBACK_PARAMS
 
 
-def test_sound_params_defined():
-    """All expected sound names have generation parameters."""
-    expected = {"hover", "click", "confirm", "cancel", "error"}
-    actual = set(AudioManager._SOUND_PARAMS.keys())
+def test_sound_files_defined():
+    """All expected sound names have WAV file mappings."""
+    expected = {"hover", "click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start"}
+    actual = set(_SOUND_FILES.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
-    print("  ✓ Sound parameters defined for all 5 sounds")
+    print("  ✓ Sound file mappings defined for all 9 sounds")
 
 
-def test_sound_generation_parameters():
-    """Each sound has valid (freq, duration, sweep) tuple."""
-    for name, params in AudioManager._SOUND_PARAMS.items():
+def test_fallback_params_defined():
+    """All expected sound names have fallback generation parameters."""
+    expected = {"hover", "click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start"}
+    actual = set(_FALLBACK_PARAMS.keys())
+    assert actual == expected, f"Expected {expected}, got {actual}"
+    print("  ✓ Fallback parameters defined for all 9 sounds")
+
+
+def test_sound_files_exist():
+    """All referenced WAV files exist in the assets directory."""
+    from shared.audio import _UI_AUDIO_DIR
+    for name, filename in _SOUND_FILES.items():
+        filepath = os.path.join(_UI_AUDIO_DIR, filename)
+        assert os.path.exists(filepath), f"Missing audio file: {filepath} (for {name})"
+    print("  ✓ All 9 WAV files exist in assets/audio/ui/")
+
+
+def test_fallback_generation_parameters():
+    """Each fallback sound has valid (freq, duration, sweep) tuple."""
+    for name, params in _FALLBACK_PARAMS.items():
         freq, dur, sweep = params
         assert isinstance(freq, (int, float)) and freq > 0, f"{name}: invalid freq {freq}"
         assert isinstance(dur, (int, float)) and 0 < dur < 1.0, f"{name}: invalid dur {dur}"
         assert isinstance(sweep, (int, float)) and sweep > 0, f"{name}: invalid sweep {sweep}"
-    print("  ✓ All sound parameters are valid")
+    print("  ✓ All fallback parameters are valid")
 
 
 def test_gen_tone():
@@ -39,10 +56,8 @@ def test_gen_tone():
     n = int(sr * 0.05)
     samples = AudioManager._gen_tone(n, sr, 600, 1.0)
     assert len(samples) == n, f"Expected {n} samples, got {len(samples)}"
-    # All samples should be finite numbers
     for i, s in enumerate(samples):
         assert math.isfinite(s), f"Sample {i} is not finite: {s}"
-    # First sample should be 0 (start of sine)
     assert samples[0] == 0.0
     print("  ✓ _gen_tone produces valid samples")
 
@@ -69,6 +84,28 @@ def test_gen_error():
     print("  ✓ _gen_error produces valid samples")
 
 
+def test_gen_heavy():
+    """_gen_heavy produces correct number of samples."""
+    sr = 22050
+    n = int(sr * 0.40)
+    samples = AudioManager._gen_heavy(n, sr, 100, 0.5)
+    assert len(samples) == n
+    for s in samples:
+        assert math.isfinite(s)
+    print("  ✓ _gen_heavy produces valid samples")
+
+
+def test_gen_sparkle():
+    """_gen_sparkle produces correct number of samples."""
+    sr = 22050
+    n = int(sr * 0.30)
+    samples = AudioManager._gen_sparkle(n, sr)
+    assert len(samples) == n
+    for s in samples:
+        assert math.isfinite(s)
+    print("  ✓ _gen_sparkle produces valid samples")
+
+
 def test_pcm_conversion():
     """Samples are correctly clamped to 16-bit PCM range."""
     sr = 22050
@@ -93,7 +130,6 @@ def test_volume_control():
     mgr.set_volume(0.8)
     assert mgr.get_volume() == 0.8
 
-    # Clamping
     mgr.set_volume(1.5)
     assert mgr.get_volume() == 1.0
 
@@ -135,10 +171,10 @@ def test_play_noop_when_unavailable():
     mgr._mixer_ready = False
     mgr._sample_rate = 22050
 
-    # Should not raise
     mgr.play("hover")
     mgr.play("click")
     mgr.play("confirm")
+    mgr.play("game_over")
     mgr.play("nonexistent")
     print("  ✓ play() is safe when mixer unavailable")
 
@@ -149,10 +185,9 @@ def test_play_noop_when_muted():
     mgr._master_volume = 0.5
     mgr._muted = True
     mgr._sounds = {}
-    mgr._mixer_ready = True  # mixer "ready" but muted
+    mgr._mixer_ready = True
     mgr._sample_rate = 22050
 
-    # Should not raise
     mgr.play("hover")
     print("  ✓ play() is safe when muted")
 
@@ -172,39 +207,36 @@ def test_repr():
     print("  ✓ __repr__ returns status string")
 
 
-def test_all_sound_types_generate():
-    """All 5 sound types generate without error."""
+def test_all_fallback_sounds_generate():
+    """All 9 fallback sound types generate without error."""
     sr = 22050
-    for name, (freq, dur, sweep) in AudioManager._SOUND_PARAMS.items():
+    for name, (freq, dur, sweep) in _FALLBACK_PARAMS.items():
         n = int(sr * dur)
         if name == "confirm":
             samples = AudioManager._gen_confirm(n, sr)
         elif name == "error":
             samples = AudioManager._gen_error(n, sr)
+        elif name in ("game_over", "boss_start"):
+            samples = AudioManager._gen_heavy(n, sr, freq, sweep)
+        elif name == "level_up":
+            samples = AudioManager._gen_sparkle(n, sr)
+        elif name == "transition":
+            samples = AudioManager._gen_whoosh(n, sr)
         else:
             samples = AudioManager._gen_tone(n, sr, freq, sweep)
         assert len(samples) == n, f"{name}: expected {n} samples, got {len(samples)}"
         buf = array.array("h", [max(-32768, min(32767, int(s))) for s in samples])
         assert len(buf) == n
-    print("  ✓ All 5 sound types generate successfully")
+    print("  ✓ All 9 fallback sound types generate successfully")
 
 
 def test_hover_sound_is_short():
-    """Hover sound should be the shortest (< 50ms)."""
-    hover_dur = AudioManager._SOUND_PARAMS["hover"][1]
-    for name, (_, dur, _) in AudioManager._SOUND_PARAMS.items():
+    """Hover sound should be the shortest."""
+    hover_dur = _FALLBACK_PARAMS["hover"][1]
+    for name, (_, dur, _) in _FALLBACK_PARAMS.items():
         if name != "hover":
             assert hover_dur <= dur, f"Hover ({hover_dur}s) should be <= {name} ({dur}s)"
     print("  ✓ Hover sound is shortest")
-
-
-def test_confirm_sound_is_longest():
-    """Confirm sound should be among the longest."""
-    confirm_dur = AudioManager._SOUND_PARAMS["confirm"][1]
-    for name, (_, dur, _) in AudioManager._SOUND_PARAMS.items():
-        if name not in ("confirm", "error"):
-            assert confirm_dur >= dur, f"Confirm ({confirm_dur}s) should be >= {name} ({dur}s)"
-    print("  ✓ Confirm sound is appropriately longer")
 
 
 # ═══════════════════════════════════════════
@@ -214,20 +246,23 @@ def test_confirm_sound_is_longest():
 def run_all_tests():
     """Run all audio tests and return True if all passed."""
     tests = [
-        test_sound_params_defined,
-        test_sound_generation_parameters,
+        test_sound_files_defined,
+        test_fallback_params_defined,
+        test_sound_files_exist,
+        test_fallback_generation_parameters,
         test_gen_tone,
         test_gen_confirm,
         test_gen_error,
+        test_gen_heavy,
+        test_gen_sparkle,
         test_pcm_conversion,
         test_volume_control,
         test_mute_toggle,
         test_play_noop_when_unavailable,
         test_play_noop_when_muted,
         test_repr,
-        test_all_sound_types_generate,
+        test_all_fallback_sounds_generate,
         test_hover_sound_is_short,
-        test_confirm_sound_is_longest,
     ]
 
     passed = 0

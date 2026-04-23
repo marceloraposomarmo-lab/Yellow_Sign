@@ -40,6 +40,7 @@ class LevelUpScreen(Screen):
     def enter(self):
         self.replace_mode = False
         self._build_skill_buttons()
+        self.play_level_up()
 
     def _build_skill_buttons(self):
         s = self.ctx.state

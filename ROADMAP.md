@@ -287,8 +287,10 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 ### P3 — Polish & Content
 
 #### Audio System
-- [x] Create `shared/audio.py` — AudioManager class with procedural SFX generation
-- [x] UI sounds: hover, click, confirm, cancel, error
+- [x] Create `shared/audio.py` — AudioManager class with WAV asset loading + procedural fallback
+- [x] UI sounds: hover (BNA_UI16), click (BNA_UI19), confirm (BNA_UI4), cancel (BNA_UI2), error (BNA_UI18)
+- [x] Extra sounds: game_over (BNA_UI8), level_up (BNA_UI1), transition (BNA_UI7), boss_start (BNA_UI3)
+- [x] Horror UI sound pack — 20 BNA WAV files in assets/audio/ui/
 - [ ] Combat audio: hit, crit, spell cast, block, enemy death
 - [ ] Ambient soundscapes per floor type
 - [ ] Dynamic music layers that intensify during combat or at low HP

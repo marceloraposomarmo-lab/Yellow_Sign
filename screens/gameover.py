@@ -33,6 +33,10 @@ class GameOverScreen(Screen):
         self.restart_btn = None
         self.menu_btn = None
 
+    def enter(self):
+        super().enter()
+        self.play_game_over()
+
     def handle_event(self, event):
         btns = []
         if self.restart_btn:

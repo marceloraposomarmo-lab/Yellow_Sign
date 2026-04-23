@@ -246,6 +246,9 @@ class Game:
             # Already transitioning — force complete immediately
             self._finish_transition(name)
             return
+        # Play screen transition sound
+        if self.audio:
+            self.audio.play("transition")
         self.transition = "fadeOut"
         self.transition_timer = 0
         self._pending_screen = name

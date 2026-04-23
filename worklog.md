@@ -101,3 +101,33 @@ Files modified: shared/__init__.py, shared/game_context.py, screens/base.py, pyg
   screens/rest.py, screens/loot.py, screens/event.py, screens/trap_result.py,
   screens/combat_result.py, screens/levelup.py, screens/gameover.py, screens/victory.py,
   screens/save.py, screens/stats.py, tests/run_all.py, ROADMAP.md
+
+---
+Task ID: 3
+Agent: Main
+Task: Replace procedural audio with real horror UI sound effects
+
+Work Log:
+- User provided 20 BNA horror UI WAV files (BNA_UI1 through BNA_UI20)
+- Downloaded and converted all files (12 were MP3 with .wav extension → converted to PCM WAV)
+- Analyzed each file using MiMo audio model to understand character/duration/mood
+- Selected best match for each UI action:
+
+  hover      → BNA_UI16 (1.4s) — Soft bloop, non-intrusive navigation feedback
+  click      → BNA_UI19 (0.3s) — Crisp digital click, instant feedback
+  confirm    → BNA_UI4  (1.7s) — Playful blip/pop, positive accept
+  cancel     → BNA_UI2  (5.8s) — Descending blip, natural "back" feel
+  error      → BNA_UI18 (0.4s) — Sharp electronic blip, invalid action
+  game_over  → BNA_UI8  (2.6s) — Heavy cinematic thud, dramatic end
+  level_up   → BNA_UI1  (5.7s) — Ascending chime, achievement sparkle
+  transition → BNA_UI7  (3.7s) — Whoosh, screen-to-screen movement
+  boss_start → BNA_UI3  (4.0s) — Heavy impact, boss encounter opener
+
+- Rewrote AudioManager to load WAV files from assets/audio/ui/ with procedural fallback
+- Added 4 new sound types (game_over, level_up, transition, boss_start)
+- Added new Screen helpers and hooked into specific screens:
+  - gameover.py — plays game_over on enter
+  - levelup.py — plays level_up on enter
+  - pygame_game.py — plays transition on screen switch
+  - combat/screen.py — plays boss_start when entering boss fight
+- 17 audio tests, all 658 tests passing

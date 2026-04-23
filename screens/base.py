@@ -66,6 +66,22 @@ class Screen:
         """Play the error/invalid sound."""
         self._play_sound("error")
 
+    def play_game_over(self) -> None:
+        """Play the game over sound."""
+        self._play_sound("game_over")
+
+    def play_level_up(self) -> None:
+        """Play the level up sound."""
+        self._play_sound("level_up")
+
+    def play_transition(self) -> None:
+        """Play the screen transition sound."""
+        self._play_sound("transition")
+
+    def play_boss_start(self) -> None:
+        """Play the boss encounter start sound."""
+        self._play_sound("boss_start")
+
     # ── Hover tracking ────────────────────────────────────────────────────────
 
     def update_hover(self, event, buttons):

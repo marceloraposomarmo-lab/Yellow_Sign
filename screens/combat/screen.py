@@ -170,6 +170,9 @@ class CombatScreen(CombatRendererMixin, Screen):
             s.combat.add_log(intent_msg, "info")
             # Spawn intent particles to draw attention
             self._spawn_intent_particles()
+            # Play boss encounter sound
+            if s.combat.is_boss:
+                self.play_boss_start()
 
     def _spawn_intent_particles(self):
         """Spawn atmospheric particles around the enemy intent indicator."""
