@@ -221,8 +221,19 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 | Priority | Description | Commit |
 |----------|-------------|--------|
 | P1 | Division-by-zero fixes in damage.py and skills.py | e7e2d1e |
+| P1b | Division-by-zero guards in combat.py (boss phase) + heal.py (missing HP) | 83affec |
 | P2 | 100% docstring coverage in engine/skills.py (57/57 functions) | — |
 | P3 | Automated linting (black, flake8), 302 flake8 warnings resolved | 81092fb |
+
+### Phase 2b — Code Hygiene (2026-04-23)
+
+| # | Improvement | Commit | Description |
+|---|-------------|--------|-------------|
+| #10 | Division-by-zero guards | 83affec | Guarded 2 remaining unguarded divisions: `engine/combat.py:224` (boss phase HP ratio) and `engine/skills/heal.py:48` (missing HP heal calc). Both now safe when max_hp == 0. |
+| #11 | camelCase → snake_case renames | 83affec | Renamed 8 private helper functions to snake_case: `_calc_heal_titanResil` → `_calc_heal_titan_resil`, `_calc_heal_layOnHands` → `_calc_heal_lay_on_hands`, `_calc_heal_darkRegen` → `_calc_heal_dark_regen`, `_calc_heal_hasturEmbrace` → `_calc_heal_hastur_embrace`, `_calc_heal_secondWind` → `_calc_heal_second_wind`, `_calc_heal_nimbleRecov` → `_calc_heal_nimble_recov`, `_shield_fracSan` → `_shield_frac_san`. All registry references updated. |
+| #12 | Magic number extraction (30+ constants) | 83affec | Extracted hardcoded numeric literals to named constants in `data/constants.py`: 7 madness cost tiers (`MADNESS_COST_TINY` through `MADNESS_COST_HEAVY`), 6 heal fractions (`HEAL_TITAN_RESIL_FRAC`, `HEAL_DEVOUR_FRAC`, etc.), 6 stat boost tiers (`BUFF_STAT_BOOST_TINY` through `BUFF_STAT_BOOST_MAJOR`), HP cost constants (`BUFF_RAGE_HP_PCT`, `BUFF_WARLORD_HP_PCT`). Applied across `engine/skills/heal.py`, `shield.py`, and `buff.py`. |
+| #13 | TypedDict for class data structures | 83affec | Added `ClassSkillData` (40+ fields) and `ClassData` TypedDicts to `engine/models.py`. Provides type safety for the CLASSES dict consumed by `init_from_class()` and `recalc_stats()`. |
+| #14 | Game analysis document | 83affec | Generated comprehensive 15-page analysis (`Yellow_Sign_Analysis.docx`) with Lovecraftian color palette styling. Covers all sectors: architecture, combat, classes, visual, content, audio, persistence, testing. Includes prioritized improvement list with impact/difficulty ratings. |
 
 ### Phase 3 — Architecture & Performance Improvements (#5-#9)
 
@@ -318,6 +329,10 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 - [x] Extract magic numbers to `data/constants.py` (60+ named constants)
 - [x] Dependency Injection / Service Locator (GameContext decouples screens from Game)
 - [x] Surface pooling & caching (all per-frame allocations eliminated)
+- [x] Division-by-zero guards on all HP/max_hp divisions (combat.py, heal.py, damage.py, status_effects.py)
+- [x] Rename camelCase helpers to snake_case (8 functions in heal.py and shield.py)
+- [x] Extract skill-specific magic numbers to constants (30+ literals: madness costs, heal fractions, stat boosts, HP costs)
+- [x] Add TypedDict for class data structures (ClassSkillData, ClassData in engine/models.py)
 
 #### Testing — Completed
 - [x] 271 combat tests (all classes, damage, buffs, debuffs, AI, boss phases)
@@ -340,7 +355,7 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 - **1,156 tests passing** — combat (271) + edge cases (161) + property-based (515) + save/load (104) + integration (105)
 - **0 flake8 errors** (strict checks)
 - **0 mypy errors** (all 17 warnings resolved with TypedDict + cast)
-- **60+ named constants** in `data/constants.py`
+- **90+ named constants** in `data/constants.py` (60+ original + 30+ extracted from skill handlers)
 - **Pre-commit hooks** configured (black + flake8)
 - **CI/CD pipeline** via GitHub Actions (lint + test matrix + coverage)
 - **100% docstring coverage** in `engine/skills/` package and `engine/damage.py`
@@ -348,6 +363,9 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 - **Save system v2** with backward compatibility
 - **Surface pooling** — zero per-frame allocations in draw paths
 - **Dependency injection** — screens decoupled from Game via GameContext
+- **Zero unguarded divisions** — all HP/max_hp ratios guarded against zero
+- **Consistent naming** — all private helpers use snake_case
+- **TypedDict coverage** — ClassSkillData, ClassData, EnemyData, RarityData, ItemTemplate, PathTemplate, Event, Trap
 
 ---
 
@@ -364,4 +382,4 @@ Each class has ~40 skills spread across self-heal, self-shield, self-buff, physi
 
 ---
 
-*Last updated: 2026-04-22 (Improvements #5-#9 complete: DI, surface pooling, test expansion, CI/CD)*
+*Last updated: 2026-04-23 (Improvements #10-#14: division-by-zero guards, camelCase→snake_case, magic number extraction, TypedDict additions, game analysis document)*

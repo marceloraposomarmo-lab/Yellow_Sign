@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from shared.logger import configure_logging, get_logger, shutdown as shutdown_logging
 from shared.game_context import GameContext
+from shared.transitions import TransitionType, get_transition_for, get_transition_durations, render_transition
 from config import get_settings
 
 # ═══════════════════════════════════════════
@@ -177,14 +178,13 @@ class Game:
         self.current_screen = self.screens[ScreenName.TITLE]
         self.current_screen.enter()
 
-        # Screen transition state (fade-to-black)
-        self.transition = None  # None, "fadeOut", "fadeIn"
+        # ── Context-aware screen transitions ──
+        self.transition = None          # None, "fadeOut", "fadeIn"
         self.transition_timer = 0
-        self.transition_duration = 0.3  # seconds per phase
+        self.transition_out_duration = 0.25  # overwritten per-type
+        self.transition_in_duration = 0.25
+        self.transition_type = TransitionType.FADE_BLACK
         self._pending_screen = None
-
-        sw, sh = self.screen.get_size()
-        self._transition_surface = pygame.Surface((sw, sh), pygame.SRCALPHA)
 
         logger.info("Game initialized — entering title screen")
 
@@ -222,27 +222,36 @@ class Game:
     def switch_screen(self, name: ScreenName):
         """Transition to the screen identified by *name* (a ``ScreenName`` enum).
 
+        The transition type is determined automatically based on the source
+        and target screens.  Three clean effects are available:
+        - FADE_BLACK: general navigation
+        - MENU_REVEAL: inventory, shop, save/load, stats
+        - COMBAT_DIVE: entering combat
+
         Parameters
         ----------
         name:
             The target screen.  Must be a :class:`ScreenName` member.
-
-        Raises / guards
-        ---------------
-        If *name* is not registered in ``self.screens`` a warning is logged
-        and the call is silently ignored (preventing crashes from typos).
         """
         if name not in self.screens:
             logger.warning("Attempted to switch to unknown screen: %s", name)
             return
         if self.transition is not None:
-            # Already transitioning — force complete immediately
             self._finish_transition(name)
             return
+
+        # Determine context-aware transition type and per-type durations
+        current_name = getattr(self, "_current_screen_name", ScreenName.TITLE)
+        self.transition_type = get_transition_for(current_name, name)
+        out_dur, in_dur = get_transition_durations(self.transition_type)
+        self.transition_out_duration = out_dur
+        self.transition_in_duration = in_dur
+
         self.transition = "fadeOut"
         self.transition_timer = 0
         self._pending_screen = name
-        logger.debug("Screen transition: fadeOut → %s", name.value)
+        logger.debug("Screen transition: %s → %s [%s]",
+                      current_name.value, name.value, self.transition_type.value)
 
     def _finish_transition(self, name=None):
         """Immediately complete a pending or forced transition."""
@@ -252,7 +261,7 @@ class Game:
             self._current_screen_name = target
             self.current_screen = self.screens[target]
             self.current_screen.enter()
-            logger.debug("Screen transition complete: %s → %s", self._prev_screen_name.value, target.value)
+            logger.debug("Screen entered: %s", target.value)
         self.transition = None
         self.transition_timer = 0
         self._pending_screen = None
@@ -265,12 +274,12 @@ class Game:
             # Handle transition timing
             if self.transition:
                 self.transition_timer += dt
-                if self.transition == "fadeOut" and self.transition_timer >= self.transition_duration:
+                if self.transition == "fadeOut" and self.transition_timer >= self.transition_out_duration:
                     # Fade-out complete — switch screen and start fade-in
                     self._finish_transition()
                     self.transition = "fadeIn"
                     self.transition_timer = 0
-                elif self.transition == "fadeIn" and self.transition_timer >= self.transition_duration:
+                elif self.transition == "fadeIn" and self.transition_timer >= self.transition_in_duration:
                     # Fade-in complete
                     self.transition = None
                     self.transition_timer = 0
@@ -298,15 +307,19 @@ class Game:
                 self.screen.fill(C.DARK_BG)
             self.current_screen.draw(self.screen)
 
-            # Draw transition overlay
+            # Draw context-aware transition overlay
             if self.transition:
-                progress = min(1.0, self.transition_timer / self.transition_duration)
                 if self.transition == "fadeOut":
-                    alpha = int(255 * progress)
-                else:  # fadeIn
-                    alpha = int(255 * (1.0 - progress))
-                self._transition_surface.fill((0, 0, 0, alpha))
-                self.screen.blit(self._transition_surface, (0, 0))
+                    progress = min(1.0, self.transition_timer / self.transition_out_duration)
+                else:
+                    progress = min(1.0, self.transition_timer / self.transition_in_duration)
+                render_transition(
+                    surface=self.screen,
+                    transition_type=self.transition_type,
+                    phase=self.transition,
+                    progress=progress,
+                    time_seconds=self.time_seconds,
+                )
 
             pygame.display.flip()
 

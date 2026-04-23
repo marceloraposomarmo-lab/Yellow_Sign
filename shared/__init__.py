@@ -77,6 +77,14 @@ from shared.lighting import (
     create_combat_lighting,
 )
 
+# Context-aware screen transitions
+from shared.transitions import (
+    TransitionType,
+    get_transition_for,
+    get_transition_durations,
+    render_transition,
+)
+
 # Logging system — available for all modules
 from shared.logger import get_logger, configure_logging, set_level, shutdown as shutdown_logging
 
