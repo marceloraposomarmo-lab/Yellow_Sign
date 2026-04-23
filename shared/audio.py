@@ -4,16 +4,19 @@ THE KING IN YELLOW — Audio Manager
 Plays UI sound effects from WAV assets in assets/audio/ui/.
 Falls back to procedural synthesis when audio files are missing.
 
-Sound palette (BNA horror UI pack):
-  hover       — BNA_UI16  |  Soft bloop, subtle navigation feedback
-  click       — BNA_UI19  |  Crisp digital click, instant button feedback
-  confirm     — BNA_UI4   |  Playful blip/pop, positive accept actions
-  cancel      — BNA_UI2   |  Descending blip, back/dismiss
-  error       — BNA_UI18  |  Sharp electronic blip, invalid action
-  game_over   — BNA_UI8   |  Heavy cinematic thud, dramatic end
-  level_up    — BNA_UI1   |  Ascending chime, achievement sparkle
-  transition  — BNA_UI7   |  Whoosh, screen-to-screen movement
-  boss_start  — BNA_UI3   |  Heavy impact, boss encounter opener
+Sound palette (BNA horror UI pack — Lovecraftian selection):
+  hover       — BNA_UI8   |  Crisp digital blip, precise navigation feedback
+  click       — BNA_UI28  |  Quick digital tick, clean button press
+  confirm     — BNA_UI4   |  Solid low-frequency thud, weighty confirmation
+  cancel      — BNA_UI10  |  Soft muted thud, grounded back/dismiss
+  error       — BNA_UI9   |  Deep metallic thud, ominous invalid action
+  game_over   — BNA_UI29  |  Heavy cinematic slam, final dread
+  level_up    — BNA_UI25  |  Ethereal shimmering sweep, dark reward
+  transition  — BNA_UI13_Long3  |  Stone door whoosh, atmospheric passage
+  boss_start  — BNA_UI13_Long4  |  Cinematic drone → metallic reveal
+  loot        — BNA_UI11  |  Dice & coin clatter, loot chest opening
+  equip       — BNA_UI15  |  Blade unsheath, weapon equipping
+  purchase    — BNA_UI12  |  Bubbly rising chime, shop transaction
 
 Architecture:
   - AudioManager is created once in Game and passed via GameContext
@@ -50,28 +53,34 @@ _UI_AUDIO_DIR = os.path.join(
 
 # Sound file mapping: sound_name -> filename
 _SOUND_FILES: Dict[str, str] = {
-    "hover":      "BNA_UI16.wav",
-    "click":      "BNA_UI19.wav",
+    "hover":      "BNA_UI8.wav",
+    "click":      "BNA_UI28.wav",
     "confirm":    "BNA_UI4.wav",
-    "cancel":     "BNA_UI2.wav",
-    "error":      "BNA_UI18.wav",
-    "game_over":  "BNA_UI8.wav",
-    "level_up":   "BNA_UI1.wav",
-    "transition": "BNA_UI7.wav",
-    "boss_start": "BNA_UI3.wav",
+    "cancel":     "BNA_UI10.wav",
+    "error":      "BNA_UI9.wav",
+    "game_over":  "BNA_UI29.wav",
+    "level_up":   "BNA_UI25.wav",
+    "transition": "BNA_UI13_Long3.wav",
+    "boss_start": "BNA_UI13_Long4.wav",
+    "loot":       "BNA_UI11.wav",
+    "equip":      "BNA_UI15.wav",
+    "purchase":   "BNA_UI12.wav",
 }
 
 # Procedural fallback parameters: (frequency_hz, duration_sec, sweep_factor)
 _FALLBACK_PARAMS: Dict[str, tuple] = {
     "hover":      (900, 0.04, 1.3),
     "click":      (600, 0.06, 1.0),
-    "confirm":    (1000, 0.12, 1.5),
-    "cancel":     (400, 0.10, 0.6),
-    "error":      (150, 0.15, 0.7),
-    "game_over":  (100, 0.40, 0.5),
-    "level_up":   (800, 0.30, 2.0),
-    "transition": (500, 0.20, 1.8),
-    "boss_start": (80, 0.50, 0.4),
+    "confirm":    (300, 0.15, 0.8),
+    "cancel":     (250, 0.10, 0.6),
+    "error":      (120, 0.20, 0.5),
+    "game_over":  (80, 0.50, 0.4),
+    "level_up":   (600, 0.35, 1.8),
+    "transition": (200, 0.30, 1.5),
+    "boss_start": (60, 0.60, 0.3),
+    "loot":       (800, 0.10, 1.2),
+    "equip":      (1200, 0.15, 0.9),
+    "purchase":   (700, 0.12, 1.4),
 }
 
 
@@ -126,7 +135,8 @@ class AudioManager:
         name : str
             Sound name: ``"hover"``, ``"click"``, ``"confirm"``,
             ``"cancel"``, ``"error"``, ``"game_over"``, ``"level_up"``,
-            ``"transition"``, or ``"boss_start"``.
+            ``"transition"``, ``"boss_start"``, ``"loot"``, ``"equip"``,
+            or ``"purchase"``.
         """
         if self._muted or not self._mixer_ready:
             return
@@ -220,6 +230,12 @@ class AudioManager:
             samples = self._gen_sparkle(n, sr)
         elif name == "transition":
             samples = self._gen_whoosh(n, sr)
+        elif name == "loot":
+            samples = self._gen_loot(n, sr)
+        elif name == "equip":
+            samples = self._gen_equip(n, sr)
+        elif name == "purchase":
+            samples = self._gen_purchase(n, sr)
         else:
             samples = self._gen_tone(n, sr, freq, sweep)
 
@@ -322,6 +338,53 @@ class AudioManager:
             import random
             noise = random.uniform(-0.3, 0.3) * 8000 * envelope
             val = 8000 * envelope * math.sin(2 * math.pi * f * t) + noise
+            samples.append(val)
+        return samples
+
+    @staticmethod
+    def _gen_loot(n: int, sr: int) -> list:
+        """Generate loot/coin clatter sound."""
+        import random
+        samples = []
+        for i in range(n):
+            t = i / sr
+            progress = i / n
+            envelope = (1.0 - progress) ** 3
+            # Multiple short metallic taps at random pitches
+            f = random.choice([1200, 1500, 1800, 2200])
+            val = 8000 * envelope * math.sin(2 * math.pi * f * t)
+            val += 4000 * envelope * math.sin(2 * math.pi * f * 1.7 * t)
+            samples.append(val)
+        return samples
+
+    @staticmethod
+    def _gen_equip(n: int, sr: int) -> list:
+        """Generate metallic blade/equip sound."""
+        samples = []
+        for i in range(n):
+            t = i / sr
+            progress = i / n
+            # Sharp attack, quick decay
+            envelope = (1.0 - progress) ** 1.5
+            # High metallic frequency with slight downward sweep
+            f = 1800 - 400 * progress
+            val = 12000 * envelope * math.sin(2 * math.pi * f * t)
+            val += 6000 * envelope * math.sin(2 * math.pi * f * 2.3 * t)
+            samples.append(val)
+        return samples
+
+    @staticmethod
+    def _gen_purchase(n: int, sr: int) -> list:
+        """Generate bubbly purchase/transaction chime."""
+        samples = []
+        for i in range(n):
+            t = i / sr
+            progress = i / n
+            envelope = (1.0 - progress) ** 2
+            # Rising bubbly pitch
+            f = 600 + 600 * progress
+            val = 8000 * envelope * math.sin(2 * math.pi * f * t)
+            val += 4000 * envelope * math.sin(2 * math.pi * f * 1.5 * t)
             samples.append(val)
         return samples
 

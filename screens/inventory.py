@@ -57,7 +57,7 @@ class InventoryScreen(Screen):
                 self.ctx.navigate(self.prev_screen)
             for i, btn in enumerate(self.item_buttons):
                 if btn.collidepoint(event.pos) and i < len(s.inventory):
-                    self.play_confirm()
+                    self.play_equip()
                     item = s.inventory[i]
                     prev = s.equip_item(item)
                     s.inventory.pop(i)

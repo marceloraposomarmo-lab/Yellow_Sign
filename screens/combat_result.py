@@ -38,6 +38,7 @@ class CombatResultScreen(Screen):
 
     def enter(self):
         self.chosen = False
+        self.play_loot()
 
     def handle_event(self, event):
         s = self.ctx.state
@@ -78,6 +79,7 @@ class CombatResultScreen(Screen):
     def _equip_loot(self):
         s = self.ctx.state
         r = self.ctx.screen_data["combat_result"]
+        self.play_equip()
         prev = s.equip_item(r["loot"])
         if prev:
             s.inventory.append(prev)

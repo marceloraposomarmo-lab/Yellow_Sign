@@ -59,7 +59,7 @@ class ShopScreen(Screen):
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, btn in enumerate(self.buy_buttons):
                 if btn.collidepoint(event.pos) and i < len(shop_items):
-                    self.play_confirm()
+                    self.play_purchase()
                     ok, msg = buy_shop_item(s, shop_items, shop_prices, shop_sold, i)
                     self.ctx.screen_data["shop_message"] = msg
                     self.ctx.screen_data["shop_msg_ok"] = ok
