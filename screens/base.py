@@ -102,6 +102,10 @@ class Screen:
         """Play the mysterious event discovery sound."""
         self._play_sound("event_mystery")
 
+    def play_trap_trigger(self) -> None:
+        """Play the ominous trap activation sound."""
+        self._play_sound("trap_trigger")
+
     # ── Hover tracking ────────────────────────────────────────────────────────
 
     def update_hover(self, event, buttons):

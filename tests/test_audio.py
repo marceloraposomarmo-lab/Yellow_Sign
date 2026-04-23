@@ -17,18 +17,18 @@ from shared.audio import AudioManager, _SOUND_FILES, _FALLBACK_PARAMS
 
 def test_sound_files_defined():
     """All expected sound names have WAV file mappings."""
-    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery"}
+    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery", "trap_trigger"}
     actual = set(_SOUND_FILES.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
-    print("  ✓ Sound file mappings defined for all 13 sounds")
+    print("  ✓ Sound file mappings defined for all 14 sounds")
 
 
 def test_fallback_params_defined():
     """All expected sound names have fallback generation parameters."""
-    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery"}
+    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery", "trap_trigger"}
     actual = set(_FALLBACK_PARAMS.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
-    print("  ✓ Fallback parameters defined for all 13 sounds")
+    print("  ✓ Fallback parameters defined for all 14 sounds")
 
 
 def test_sound_files_exist():
@@ -37,7 +37,7 @@ def test_sound_files_exist():
     for name, filename in _SOUND_FILES.items():
         filepath = os.path.join(_UI_AUDIO_DIR, filename)
         assert os.path.exists(filepath), f"Missing audio file: {filepath} (for {name})"
-    print("  ✓ All 13 WAV files exist in assets/audio/ui/")
+    print("  ✓ All 14 WAV files exist in assets/audio/ui/")
 
 
 def test_fallback_generation_parameters():
@@ -208,7 +208,7 @@ def test_repr():
 
 
 def test_all_fallback_sounds_generate():
-    """All 13 fallback sound types generate without error."""
+    """All 14 fallback sound types generate without error."""
     sr = 22050
     for name, (freq, dur, sweep) in _FALLBACK_PARAMS.items():
         n = int(sr * dur)
@@ -233,7 +233,7 @@ def test_all_fallback_sounds_generate():
         assert len(samples) == n, f"{name}: expected {n} samples, got {len(samples)}"
         buf = array.array("h", [max(-32768, min(32767, int(s))) for s in samples])
         assert len(buf) == n
-    print("  ✓ All 13 fallback sound types generate successfully")
+    print("  ✓ All 14 fallback sound types generate successfully")
 
 
 def test_click_sound_is_short():

@@ -17,7 +17,8 @@ Sound palette (BNA horror UI + Unholy Souls — Lovecraftian selection):
   equip       — Unholy_Souls_13  |  Metallic blade shing, weapon equipping
   purchase    — BNA_UI12  |  Bubbly rising chime, shop transaction
   combat_start — Monster_Mech  |  Guttural beast growl, menacing pre-combat dread
-  event_mystery — Unholy_Souls_10  |  Deep hollow resonance, eldritch mystery
+  event_mystery — Creepy_ambience_3  |  Eerie ascending shimmer, unsettling discovery
+  trap_trigger — Stinger  |  Heavy stone slam, ominous trap activation
 
 Architecture:
   - AudioManager is created once in Game and passed via GameContext
@@ -67,7 +68,8 @@ _SOUND_FILES: Dict[str, str] = {
     "equip":         "Unholy_Souls_13.wav",
     "purchase":      "BNA_UI12.wav",
     "combat_start":  "Monster_Mech.wav",
-    "event_mystery": "Unholy_Souls_10.wav",
+    "event_mystery": "Creepy_ambience_3.wav",
+    "trap_trigger":  "Stinger.wav",
 }
 
 # Procedural fallback parameters: (frequency_hz, duration_sec, sweep_factor)
@@ -85,6 +87,7 @@ _FALLBACK_PARAMS: Dict[str, tuple] = {
     "purchase":      (700, 0.12, 1.4),
     "combat_start":  (80, 0.25, 0.4),
     "event_mystery": (150, 0.30, 0.7),
+    "trap_trigger":  (100, 0.25, 0.3),
 }
 
 
@@ -140,7 +143,8 @@ class AudioManager:
             Sound name: ``"click"``, ``"confirm"``, ``"cancel"``,
             ``"error"``, ``"game_over"``, ``"level_up"``,
             ``"transition"``, ``"boss_start"``, ``"loot"``, ``"equip"``,
-            ``"purchase"``, ``"combat_start"``, or ``"event_mystery"``.
+            ``"purchase"``, ``"combat_start"``, ``"event_mystery"``,
+            or ``"trap_trigger"``.
         volume : float, optional
             Per-play volume override (0.0 to 1.0). If None, uses master volume.
         """

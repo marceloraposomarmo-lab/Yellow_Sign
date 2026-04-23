@@ -210,7 +210,7 @@ class ExploreScreen(Screen):
             self.ctx.screen_data["shop_sold"] = [False] * len(items)
             self.ctx.navigate(ScreenName.SHOP)
         elif ptype == "trap":
-            self.play_error()  # ominous thud — danger ahead
+            self.play_trap_trigger()  # heavy stone slam — trap activated
             trap = random.choice(TRAPS)
             trap_idx = TRAPS.index(trap)
             msg, game_over = resolve_trap(s, trap_idx)
