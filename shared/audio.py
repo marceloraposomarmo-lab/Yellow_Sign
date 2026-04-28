@@ -81,11 +81,11 @@ _MUSIC_TRACKS: Dict[str, List[str]] = {
 
 # Default volumes per music context (0.0–1.0)
 _MUSIC_VOLUMES: Dict[str, float] = {
-    "intro":        0.16,
-    "explore_low":  0.11,
-    "explore_high": 0.14,
-    "combat":       0.16,
-    "boss":         0.19,
+    "intro":        0.12,
+    "explore_low":  0.09,
+    "explore_high": 0.12,
+    "combat":       0.14,
+    "boss":         0.16,
 }
 
 # Fade durations in milliseconds
