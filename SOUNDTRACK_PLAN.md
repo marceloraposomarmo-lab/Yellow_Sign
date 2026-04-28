@@ -108,4 +108,4 @@ if self._prev_madness_zone != self._current_madness_zone:
 
 ---
 
-*Ready for implementation in next prompt.*
+*~~Ready for implementation in next prompt.~~* **IMPLEMENTED** — commit `902f47e`
