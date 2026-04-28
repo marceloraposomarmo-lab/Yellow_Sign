@@ -35,6 +35,7 @@ class GameOverScreen(Screen):
 
     def enter(self):
         super().enter()
+        self.stop_music(fade_ms=2000)
         self.play_game_over()
 
     def handle_event(self, event):

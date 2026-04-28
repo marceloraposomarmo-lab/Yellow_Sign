@@ -170,7 +170,11 @@ class CombatScreen(CombatRendererMixin, Screen):
             s.combat.add_log(intent_msg, "info")
             # Spawn intent particles to draw attention
             self._spawn_intent_particles()
-            # Boss encounter — no audio here (user will add custom SFX)
+            # Start combat music — boss gets dedicated track, normal gets shuffled
+            if s.combat.enemy.is_boss:
+                self.play_music("boss", fade_ms=2500)
+            else:
+                self.play_music("combat", fade_ms=1500)
 
     def _spawn_intent_particles(self):
         """Spawn atmospheric particles around the enemy intent indicator."""
@@ -704,6 +708,7 @@ class CombatScreen(CombatRendererMixin, Screen):
             return
         if combat_run_attempt(s):
             s.combat = None
+            self.stop_music(fade_ms=1000)
             advance_floor(s)
             self.ctx.navigate(ScreenName.EXPLORE)
         else:
@@ -723,6 +728,7 @@ class CombatScreen(CombatRendererMixin, Screen):
             self._start_victory_animation()
         else:
             s.combat = None
+            self.stop_music(fade_ms=2000)
             self.ctx.screen_data["gameover_msg"] = (
                 "Your body crumples. The last thing you see is the Yellow Sign, burning brighter than ever."
             )
@@ -862,6 +868,7 @@ class CombatScreen(CombatRendererMixin, Screen):
         # Clear combat FIRST (so draw() early-returns), then victory state
         s.combat = None
         self._victory_state = None
+        self.stop_music(fade_ms=1500)
         if leveled:
             self.ctx.navigate(ScreenName.LEVELUP)
         else:

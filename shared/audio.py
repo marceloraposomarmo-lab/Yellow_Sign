@@ -20,11 +20,19 @@ Sound palette (BNA horror UI + Unholy Souls — Lovecraftian selection):
   event_mystery — Creepy_ambience_3  |  Eerie ascending shimmer, unsettling discovery
   trap_trigger — Stinger  |  Heavy stone slam, ominous trap activation
 
+Music contexts (MP3 assets in assets/audio/music/):
+  intro        — Game_Intro_Song.mp3           | Title + Class Select
+  explore_low  — Exploration_Low_Madness_1/2   | Exploration (madness < 50)
+  explore_high — Exploration_High_Madness_1    | Exploration (madness ≥ 50)
+  combat       — Combat_1/2/3                  | Normal enemy combat
+  boss         — Combat_4                      | Boss encounters
+
 Architecture:
   - AudioManager is created once in Game and passed via GameContext
   - Screens call ``ctx.audio.play("click")`` or use base Screen helpers
   - Sounds are loaded lazily on first use
   - Master volume and mute are configurable
+  - Music playback via pygame.mixer.music with crossfade support
   - Graceful fallback when pygame.mixer is unavailable
   - No hover sounds — only action-based audio (clicks, confirms, etc.)
 """
@@ -34,7 +42,8 @@ from __future__ import annotations
 import array
 import math
 import os
-from typing import Dict, Optional
+import random
+from typing import Dict, List, Optional
 
 from shared.logger import get_logger
 
@@ -53,6 +62,41 @@ _UI_AUDIO_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "assets", "audio", "ui",
 )
+
+# Directory containing background music MP3 files
+_MUSIC_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "assets", "audio", "music",
+)
+
+# Music track registry: context -> list of MP3 filenames
+# When multiple tracks are listed, one is picked at random (shuffled).
+_MUSIC_TRACKS: Dict[str, List[str]] = {
+    "intro":        ["Game_Intro_Song.mp3"],
+    "explore_low":  ["Exploration_Low_Madness_1.mp3", "Exploration_Low_Madness_2.mp3"],
+    "explore_high": ["Exploration_High_Madness_1.mp3"],
+    "combat":       ["Combat_1.mp3", "Combat_2.mp3", "Combat_3.mp3"],
+    "boss":         ["Combat_4.mp3"],
+}
+
+# Default volumes per music context (0.0–1.0)
+_MUSIC_VOLUMES: Dict[str, float] = {
+    "intro":        0.50,
+    "explore_low":  0.35,
+    "explore_high": 0.45,
+    "combat":       0.50,
+    "boss":         0.60,
+}
+
+# Fade durations in milliseconds
+_FADE_MS = {
+    "intro_to_explore":  2000,
+    "explore_to_combat": 1500,
+    "explore_madness":   2000,
+    "combat_to_end":     2000,
+    "boss_dramatic":     2500,
+    "quick":             800,
+}
 
 # Sound file mapping: sound_name -> filename
 _SOUND_FILES: Dict[str, str] = {
@@ -116,6 +160,12 @@ class AudioManager:
         self._sounds: Dict[str, object] = {}
         self._mixer_ready = False
 
+        # ── Music state ───────────────────────────────────────────────────────
+        self._music_volume = 0.5       # Current music volume (context-dependent)
+        self._music_muted = False      # Music-specific mute
+        self._current_music_ctx = None  # Currently playing music context
+        self._shuffle_history: Dict[str, List[str]] = {}  # ctx -> last played track
+
         if not _MIXER_AVAILABLE:
             logger.warning("pygame.mixer not available — audio disabled")
             return
@@ -131,6 +181,144 @@ class AudioManager:
         except Exception as e:
             logger.warning("pygame.mixer init failed: %s — audio disabled", e)
             self._mixer_ready = False
+
+    # ── Music API ──────────────────────────────────────────────────────────────
+
+    def play_music(self, context: str, fade_ms: int = 1000) -> None:
+        """Start background music for the given context.
+
+        Parameters
+        ----------
+        context : str
+            Music context: ``"intro"``, ``"explore_low"``, ``"explore_high"``,
+            ``"combat"``, or ``"boss"``.
+        fade_ms : int
+            Fade-in duration in milliseconds (default 1000).
+        """
+        if self._muted or self._music_muted or not self._mixer_ready:
+            return
+        if not _mixer.music:
+            return
+
+        # Don't restart the same context if already playing
+        if self._current_music_ctx == context and _mixer.music.get_busy():
+            return
+
+        tracks = _MUSIC_TRACKS.get(context)
+        if not tracks:
+            logger.debug("Unknown music context: %s", context)
+            return
+
+        # Fade out current track if switching contexts
+        if self._current_music_ctx and self._current_music_ctx != context:
+            try:
+                if _mixer.music.get_busy():
+                    _mixer.music.fadeout(min(fade_ms, 500))
+            except Exception:
+                pass
+
+        # Pick a track (avoid repeating the last one if multiple tracks)
+        if len(tracks) > 1:
+            last = self._shuffle_history.get(context)
+            candidates = [t for t in tracks if t != last] or tracks
+            track = random.choice(candidates)
+        else:
+            track = tracks[0]
+        self._shuffle_history[context] = track
+
+        filepath = os.path.join(_MUSIC_DIR, track)
+        if not os.path.exists(filepath):
+            logger.debug("Music file not found: %s", filepath)
+            return
+
+        try:
+            _mixer.music.load(filepath)
+            vol = _MUSIC_VOLUMES.get(context, 0.5)
+            self._music_volume = vol
+            _mixer.music.set_volume(vol)
+            _mixer.music.play(-1, fade_ms=fade_ms)  # -1 = loop forever
+            self._current_music_ctx = context
+            logger.info("Music: %s [%s] (vol=%.2f, fade=%dms)", context, track, vol, fade_ms)
+        except Exception as e:
+            logger.warning("play_music(%s) failed: %s", context, e)
+
+    def stop_music(self, fade_ms: int = 1000) -> None:
+        """Fade out and stop the current background music.
+
+        Parameters
+        ----------
+        fade_ms : int
+            Fade-out duration in milliseconds (default 1000).
+        """
+        if not _mixer.music:
+            return
+        try:
+            if _mixer.music.get_busy():
+                if fade_ms > 0:
+                    _mixer.music.fadeout(fade_ms)
+                else:
+                    _mixer.music.stop()
+                logger.debug("Music stopping (fade=%dms)", fade_ms)
+            self._current_music_ctx = None
+        except Exception as e:
+            logger.debug("stop_music failed: %s", e)
+
+    def crossfade_music(self, context: str, fade_ms: int = 2000) -> None:
+        """Crossfade from the current music to a new context.
+
+        Stops the current track (fade-out) then starts the new one (fade-in).
+        If nothing is playing, behaves like ``play_music()``.
+
+        Parameters
+        ----------
+        context : str
+            Target music context.
+        fade_ms : int
+            Total crossfade duration in milliseconds (split between out/in).
+        """
+        if self._current_music_ctx == context and _mixer.music and _mixer.music.get_busy():
+            return  # Already playing this context
+
+        half_fade = max(fade_ms // 2, 100)
+        self.stop_music(fade_ms=half_fade)
+        # Small gap to let the fade complete before starting new track
+        self.play_music(context, fade_ms=half_fade)
+
+    def set_music_volume(self, volume: float) -> None:
+        """Set the music volume (0.0 to 1.0)."""
+        self._music_volume = max(0.0, min(1.0, volume))
+        if _mixer.music:
+            try:
+                _mixer.music.set_volume(self._music_volume)
+            except Exception:
+                pass
+
+    def get_music_volume(self) -> float:
+        """Get current music volume."""
+        return self._music_volume
+
+    def mute_music(self) -> None:
+        """Mute background music only (SFX still play)."""
+        self._music_muted = True
+        if _mixer.music:
+            try:
+                _mixer.music.set_volume(0)
+            except Exception:
+                pass
+
+    def unmute_music(self) -> None:
+        """Unmute background music."""
+        self._music_muted = False
+        if _mixer.music:
+            try:
+                _mixer.music.set_volume(self._music_volume)
+            except Exception:
+                pass
+
+    @property
+    def music_context(self) -> Optional[str]:
+        """The currently active music context, or ``None``."""
+        return self._current_music_ctx
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -176,12 +364,14 @@ class AudioManager:
         return self._master_volume
 
     def mute(self) -> None:
-        """Mute all sounds."""
+        """Mute all sounds (SFX + music)."""
         self._muted = True
+        self.mute_music()
 
     def unmute(self) -> None:
-        """Unmute all sounds."""
+        """Unmute all sounds (SFX + music)."""
         self._muted = False
+        self.unmute_music()
 
     def toggle_mute(self) -> bool:
         """Toggle mute state. Returns new muted state."""
@@ -401,4 +591,5 @@ class AudioManager:
 
     def __repr__(self) -> str:
         status = "muted" if self._muted else ("ready" if self._mixer_ready else "unavailable")
-        return f"AudioManager({status}, vol={self._master_volume:.1f})"
+        music = f", music={self._current_music_ctx}" if self._current_music_ctx else ""
+        return f"AudioManager({status}{music}, vol={self._master_volume:.1f})"

@@ -106,6 +106,23 @@ class Screen:
         """Play the ominous trap activation sound."""
         self._play_sound("trap_trigger")
 
+    # ── Music helpers ─────────────────────────────────────────────────────────
+
+    def play_music(self, context: str, fade_ms: int = 1000) -> None:
+        """Start background music for a context (no-op if unavailable)."""
+        if self.ctx.audio:
+            self.ctx.audio.play_music(context, fade_ms=fade_ms)
+
+    def stop_music(self, fade_ms: int = 1000) -> None:
+        """Fade out and stop background music (no-op if unavailable)."""
+        if self.ctx.audio:
+            self.ctx.audio.stop_music(fade_ms=fade_ms)
+
+    def crossfade_music(self, context: str, fade_ms: int = 2000) -> None:
+        """Crossfade to a new music context (no-op if unavailable)."""
+        if self.ctx.audio:
+            self.ctx.audio.crossfade_music(context, fade_ms=fade_ms)
+
     # ── Hover tracking ────────────────────────────────────────────────────────
 
     def update_hover(self, event, buttons):

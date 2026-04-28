@@ -44,6 +44,7 @@ class ExploreScreen(Screen):
         self.particles = []
         self.typewriter = None  # TypewriterText for floor narrative
         self.narrative_complete = False
+        self._madness_zone = "low"  # "low" or "high" — tracks music crossfade threshold
 
     def enter(self):
         s = self.ctx.state
@@ -51,6 +52,14 @@ class ExploreScreen(Screen):
         # Initialize typewriter effect for floor narrative
         self.typewriter = TypewriterText(self.narrative, reveal_speed=48.0)
         self.narrative_complete = False
+
+        # Start exploration music based on madness level
+        if s.madness >= 50:
+            self._madness_zone = "high"
+            self.play_music("explore_high")
+        else:
+            self._madness_zone = "low"
+            self.play_music("explore_low")
 
         is_boss = s.floor >= s.max_floor
         if is_boss:
@@ -103,7 +112,7 @@ class ExploreScreen(Screen):
         }
 
     def update(self, dt):
-        """Update particles and typewriter animation."""
+        """Update particles, typewriter animation, and madness-based music."""
         for p in self.particles:
             p["x"] += p["vx"]
             p["y"] += p["vy"]
@@ -119,6 +128,14 @@ class ExploreScreen(Screen):
             self.narrative_complete = self.typewriter.complete
         else:
             self.narrative_complete = True
+
+        # Check madness threshold for music crossfade
+        s = self.ctx.state
+        if s:
+            new_zone = "high" if s.madness >= 50 else "low"
+            if new_zone != self._madness_zone:
+                self._madness_zone = new_zone
+                self.crossfade_music(f"explore_{new_zone}", fade_ms=2000)
 
     def handle_event(self, event):
         # Allow skipping typewriter animation with any input

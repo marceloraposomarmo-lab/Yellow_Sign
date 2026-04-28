@@ -33,6 +33,10 @@ class VictoryScreen(Screen):
         self.restart_btn = None
         self.menu_btn = None
 
+    def enter(self):
+        super().enter()
+        self.stop_music(fade_ms=2000)
+
     def handle_event(self, event):
         btns = []
         if self.restart_btn:

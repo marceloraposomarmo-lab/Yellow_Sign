@@ -61,6 +61,8 @@ class TitleScreen(Screen):
                     "life": random.uniform(2, 8),
                 }
             )
+        # Play intro music (loops across title + class select)
+        self.play_music("intro")
 
     def update(self, dt):
         for p in self.particles:
