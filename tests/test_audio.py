@@ -17,7 +17,22 @@ from shared.audio import AudioManager, _SOUND_FILES, _FALLBACK_PARAMS
 
 def test_sound_files_defined():
     """All expected sound names have WAV file mappings."""
-    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery", "trap_trigger"}
+    expected = {
+        "click",
+        "confirm",
+        "cancel",
+        "error",
+        "game_over",
+        "level_up",
+        "transition",
+        "boss_start",
+        "loot",
+        "equip",
+        "purchase",
+        "combat_start",
+        "event_mystery",
+        "trap_trigger",
+    }
     actual = set(_SOUND_FILES.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
     print("  ✓ Sound file mappings defined for all 14 sounds")
@@ -25,7 +40,22 @@ def test_sound_files_defined():
 
 def test_fallback_params_defined():
     """All expected sound names have fallback generation parameters."""
-    expected = {"click", "confirm", "cancel", "error", "game_over", "level_up", "transition", "boss_start", "loot", "equip", "purchase", "combat_start", "event_mystery", "trap_trigger"}
+    expected = {
+        "click",
+        "confirm",
+        "cancel",
+        "error",
+        "game_over",
+        "level_up",
+        "transition",
+        "boss_start",
+        "loot",
+        "equip",
+        "purchase",
+        "combat_start",
+        "event_mystery",
+        "trap_trigger",
+    }
     actual = set(_FALLBACK_PARAMS.keys())
     assert actual == expected, f"Expected {expected}, got {actual}"
     print("  ✓ Fallback parameters defined for all 14 sounds")
@@ -34,6 +64,7 @@ def test_fallback_params_defined():
 def test_sound_files_exist():
     """All referenced WAV files exist in the assets directory."""
     from shared.audio import _UI_AUDIO_DIR
+
     for name, filename in _SOUND_FILES.items():
         filepath = os.path.join(_UI_AUDIO_DIR, filename)
         assert os.path.exists(filepath), f"Missing audio file: {filepath} (for {name})"
@@ -198,6 +229,7 @@ def test_repr():
     mgr._master_volume = 0.5
     mgr._muted = False
     mgr._mixer_ready = False
+    mgr._current_music_ctx = None
     r = repr(mgr)
     assert "unavailable" in r
 
@@ -248,6 +280,7 @@ def test_click_sound_is_short():
 # ═══════════════════════════════════════════
 # TEST RUNNER
 # ═══════════════════════════════════════════
+
 
 def run_all_tests():
     """Run all audio tests and return True if all passed."""

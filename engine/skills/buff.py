@@ -214,7 +214,9 @@ def _buff_pallidMask(state: GameState, skill: Skill) -> None:
     from data import BUFF_STAT_SWAP_FACTOR
 
     for stat in ("int", "str", "agi", "wis", "luck"):
-        state.temp_stats[stat] = state.temp_stats.get(stat, 0) + int(state.base_stats.get(stat, 5) * BUFF_STAT_SWAP_FACTOR)
+        state.temp_stats[stat] = state.temp_stats.get(stat, 0) + int(
+            state.base_stats.get(stat, 5) * BUFF_STAT_SWAP_FACTOR
+        )
     state.buffs["pallidMask"] = skill.buff_duration
     state.buffs["immunity"] = skill.buff_duration
     state.recalc_stats()

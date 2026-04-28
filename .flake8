@@ -13,6 +13,7 @@ exclude =
 # Ignore pre-existing violations tracked for future cleanup
 ignore =
     E203,
+    E241,
     E501,
     W503,
     E741,

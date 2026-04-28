@@ -36,7 +36,6 @@ from data import (
     HP_STR_MULT,
 )
 
-
 # ═══════════════════════════════════════════
 # TypedDicts for data structures
 # ═══════════════════════════════════════════

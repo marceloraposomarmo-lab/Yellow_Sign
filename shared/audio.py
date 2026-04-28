@@ -52,6 +52,7 @@ logger = get_logger("audio")
 # Try to import pygame.mixer — may not be available in test environments
 try:
     import pygame.mixer as _mixer
+
     _MIXER_AVAILABLE = True
 except ImportError:
     _mixer = None
@@ -60,78 +61,82 @@ except ImportError:
 # Directory containing UI sound WAV files
 _UI_AUDIO_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "assets", "audio", "ui",
+    "assets",
+    "audio",
+    "ui",
 )
 
 # Directory containing background music MP3 files
 _MUSIC_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "assets", "audio", "music",
+    "assets",
+    "audio",
+    "music",
 )
 
 # Music track registry: context -> list of MP3 filenames
 # When multiple tracks are listed, one is picked at random (shuffled).
 _MUSIC_TRACKS: Dict[str, List[str]] = {
-    "intro":        ["Game_Intro_Song.mp3"],
-    "explore_low":  ["Exploration_Low_Madness_1.mp3", "Exploration_Low_Madness_2.mp3"],
+    "intro": ["Game_Intro_Song.mp3"],
+    "explore_low": ["Exploration_Low_Madness_1.mp3", "Exploration_Low_Madness_2.mp3"],
     "explore_high": ["Exploration_High_Madness_1.mp3"],
-    "combat":       ["Combat_1.mp3", "Combat_2.mp3", "Combat_3.mp3"],
-    "boss":         ["Combat_4.mp3"],
+    "combat": ["Combat_1.mp3", "Combat_2.mp3", "Combat_3.mp3"],
+    "boss": ["Combat_4.mp3"],
 }
 
 # Default volumes per music context (0.0–1.0)
 _MUSIC_VOLUMES: Dict[str, float] = {
-    "intro":        0.12,
-    "explore_low":  0.09,
+    "intro": 0.12,
+    "explore_low": 0.09,
     "explore_high": 0.12,
-    "combat":       0.14,
-    "boss":         0.16,
+    "combat": 0.14,
+    "boss": 0.16,
 }
 
 # Fade durations in milliseconds
 _FADE_MS = {
-    "intro_to_explore":  2000,
+    "intro_to_explore": 2000,
     "explore_to_combat": 1500,
-    "explore_madness":   2000,
-    "combat_to_end":     2000,
-    "boss_dramatic":     2500,
-    "quick":             800,
+    "explore_madness": 2000,
+    "combat_to_end": 2000,
+    "boss_dramatic": 2500,
+    "quick": 800,
 }
 
 # Sound file mapping: sound_name -> filename
 _SOUND_FILES: Dict[str, str] = {
-    "click":         "BNA_UI28.wav",
-    "confirm":       "BNA_UI40.wav",
-    "cancel":        "BNA_UI44.wav",
-    "error":         "BNA_UI9.wav",
-    "game_over":     "BNA_UI29.wav",
-    "level_up":      "BNA_UI25.wav",
-    "transition":    "BNA_UI13_Long3.wav",
-    "boss_start":    "BNA_UI13_Long4.wav",
-    "loot":          "BNA_UI11.wav",
-    "equip":         "Unholy_Souls_13.wav",
-    "purchase":      "BNA_UI12.wav",
-    "combat_start":  "mixkit-horror-swish-1495.wav",
+    "click": "BNA_UI28.wav",
+    "confirm": "BNA_UI40.wav",
+    "cancel": "BNA_UI44.wav",
+    "error": "BNA_UI9.wav",
+    "game_over": "BNA_UI29.wav",
+    "level_up": "BNA_UI25.wav",
+    "transition": "BNA_UI13_Long3.wav",
+    "boss_start": "BNA_UI13_Long4.wav",
+    "loot": "BNA_UI11.wav",
+    "equip": "Unholy_Souls_13.wav",
+    "purchase": "BNA_UI12.wav",
+    "combat_start": "mixkit-horror-swish-1495.wav",
     "event_mystery": "Creepy_ambience_3.wav",
-    "trap_trigger":  "Stinger.wav",
+    "trap_trigger": "Stinger.wav",
 }
 
 # Procedural fallback parameters: (frequency_hz, duration_sec, sweep_factor)
 _FALLBACK_PARAMS: Dict[str, tuple] = {
-    "click":         (800, 0.05, 1.0),
-    "confirm":       (400, 0.10, 0.9),
-    "cancel":        (300, 0.08, 0.6),
-    "error":         (120, 0.20, 0.5),
-    "game_over":     (80, 0.50, 0.4),
-    "level_up":      (600, 0.35, 1.8),
-    "transition":    (200, 0.30, 1.5),
-    "boss_start":    (60, 0.60, 0.3),
-    "loot":          (800, 0.10, 1.2),
-    "equip":         (1200, 0.15, 0.9),
-    "purchase":      (700, 0.12, 1.4),
-    "combat_start":  (80, 0.25, 0.4),
+    "click": (800, 0.05, 1.0),
+    "confirm": (400, 0.10, 0.9),
+    "cancel": (300, 0.08, 0.6),
+    "error": (120, 0.20, 0.5),
+    "game_over": (80, 0.50, 0.4),
+    "level_up": (600, 0.35, 1.8),
+    "transition": (200, 0.30, 1.5),
+    "boss_start": (60, 0.60, 0.3),
+    "loot": (800, 0.10, 1.2),
+    "equip": (1200, 0.15, 0.9),
+    "purchase": (700, 0.12, 1.4),
+    "combat_start": (80, 0.25, 0.4),
     "event_mystery": (150, 0.30, 0.7),
-    "trap_trigger":  (100, 0.25, 0.3),
+    "trap_trigger": (100, 0.25, 0.3),
 }
 
 
@@ -161,8 +166,8 @@ class AudioManager:
         self._mixer_ready = False
 
         # ── Music state ───────────────────────────────────────────────────────
-        self._music_volume = 0.5       # Current music volume (context-dependent)
-        self._music_muted = False      # Music-specific mute
+        self._music_volume = 0.5  # Current music volume (context-dependent)
+        self._music_muted = False  # Music-specific mute
         self._current_music_ctx = None  # Currently playing music context
         self._shuffle_history: Dict[str, List[str]] = {}  # ctx -> last played track
 
@@ -543,7 +548,6 @@ class AudioManager:
             # Frequency sweep from low to high
             f = 200 + 600 * progress
             # Mix sine + noise-like component
-            import random
             noise = random.uniform(-0.3, 0.3) * 8000 * envelope
             val = 8000 * envelope * math.sin(2 * math.pi * f * t) + noise
             samples.append(val)
@@ -552,7 +556,6 @@ class AudioManager:
     @staticmethod
     def _gen_loot(n: int, sr: int) -> list:
         """Generate loot/coin clatter sound."""
-        import random
         samples = []
         for i in range(n):
             t = i / sr
