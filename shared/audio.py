@@ -197,8 +197,6 @@ class AudioManager:
         """
         if self._muted or self._music_muted or not self._mixer_ready:
             return
-        if not _mixer.music:
-            return
 
         # Don't restart the same context if already playing
         if self._current_music_ctx == context and _mixer.music.get_busy():
@@ -250,18 +248,23 @@ class AudioManager:
         fade_ms : int
             Fade-out duration in milliseconds (default 1000).
         """
-        if not _mixer.music:
+        if not self._mixer_ready:
             return
         try:
             if _mixer.music.get_busy():
                 if fade_ms > 0:
                     _mixer.music.fadeout(fade_ms)
+                    # Don't clear context during fadeout — play_music needs it
+                    # to detect same-context restarts (e.g. flee combat → explore)
                 else:
                     _mixer.music.stop()
+                    self._current_music_ctx = None
                 logger.debug("Music stopping (fade=%dms)", fade_ms)
-            self._current_music_ctx = None
+            else:
+                self._current_music_ctx = None
         except Exception as e:
             logger.debug("stop_music failed: %s", e)
+            self._current_music_ctx = None
 
     def crossfade_music(self, context: str, fade_ms: int = 2000) -> None:
         """Crossfade from the current music to a new context.
@@ -276,7 +279,7 @@ class AudioManager:
         fade_ms : int
             Total crossfade duration in milliseconds (split between out/in).
         """
-        if self._current_music_ctx == context and _mixer.music and _mixer.music.get_busy():
+        if self._current_music_ctx == context and _mixer.music.get_busy():
             return  # Already playing this context
 
         half_fade = max(fade_ms // 2, 100)
@@ -376,6 +379,10 @@ class AudioManager:
     def toggle_mute(self) -> bool:
         """Toggle mute state. Returns new muted state."""
         self._muted = not self._muted
+        if self._muted:
+            self.mute_music()
+        else:
+            self.unmute_music()
         return self._muted
 
     @property
